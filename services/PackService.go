@@ -9,33 +9,19 @@ import (
 	"time"
 )
 
-func makeRegularPacks(req models.RegularDraftRequest) (r models.RegularDraftResponse, e error) {
-	for _, setCode := range req.Sets {
-		fmt.Printf("making set %s\n", setCode)
-
-		_, err := common.GetSet(setCode)
-
-		if err != nil {
-			return nil, err
-		}
-
-		//set
-	}
-
-	return r, nil
-}
-
 func MakePacks(sets []string) (packs []models.Pack, err error) {
 	for i := 0; i < len(sets); i++ {
 		setCode := sets[i]
 
 		set, err := common.GetSet(setCode)
 		if err != nil {
+			fmt.Println(err)
 			return nil, errors.New("set " + setCode + "does not exist")
 		}
 
 		pack, err := MakePack(&set)
 		if err != nil {
+			fmt.Println(err)
 			return nil, errors.New("could not produce pack for " + setCode)
 		}
 

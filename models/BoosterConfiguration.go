@@ -102,7 +102,7 @@ type SheetCards []SheetCard
 func (b *SheetCards) UnmarshalJSON(data []byte) error {
 	sheetsMap := make(map[MTGCardUUID]uint)
 	if err := json.Unmarshal(data, &sheetsMap); err != nil {
-		return err
+		return fmt.Errorf("sheetcards: %w", err)
 	}
 
 	for uuid, weight := range sheetsMap {
@@ -154,7 +154,7 @@ type ContentsMap map[SheetName]uint
 func (b *Contents) UnmarshalJSON(data []byte) error {
 	sheetsMap := make(ContentsMap)
 	if err := json.Unmarshal(data, &sheetsMap); err != nil {
-		return err
+		return fmt.Errorf("contents: %w", err)
 	}
 
 	for sheetName, weight := range sheetsMap {
@@ -173,7 +173,7 @@ func (b *Sheets) UnmarshalJSON(data []byte) error {
 	sheetsMap := make(SheetsMap)
 	err := json.Unmarshal(data, &sheetsMap)
 	if err != nil {
-		return err
+		return fmt.Errorf("sheets: %w", err)
 	}
 	for name, sheet := range sheetsMap {
 		sheet.Name = name

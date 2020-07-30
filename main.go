@@ -52,31 +52,31 @@ func main() {
 		resp, err := http.Get("http://mtgjson.com/api/v5/ISD.json")
 		if err != nil {
 			log.Println("Could not fetch the MTGJson monoSet")
-			context.JSON(500, "unexpected error")
+			context.JSON(500, "unexpected error: Could not fetch the MTGJson monoSet")
 			return
 		}
 		defer resp.Body.Close()
 
 		monoSet := new(models.MonoSet)
 		if err := json.NewDecoder(resp.Body).Decode(monoSet); err != nil {
-			log.Println("error while unmarshalling monoSet", err)
+			log.Println("main: error while unmarshalling monoSet", err)
 		}
 
 		log.Println("saving cards from ", monoSet.Data.Name)
 		if err := db.Save(&monoSet.Data).Error; err != nil {
-			log.Fatal("could not save the card", monoSet.Data.Name, err)
+			log.Fatal("main: could not save the card", monoSet.Data.Name, err)
 		}
 	})
 	r.POST("/regular/draft", func(c *gin.Context) {
-		var json models.RegularDraftRequest
-		if err := c.ShouldBindJSON(&json); err != nil {
+		var request models.RegularDraftRequest
+		if err := c.ShouldBindJSON(&request); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
 		ret := make([][]models.Pack, 0)
-		for p := 0; p < json.Players; p++ {
-			packs, err := services.MakePacks(json.Sets)
+		for p := 0; p < request.Players; p++ {
+			packs, err := services.MakePacks(request.Sets)
 			if err != nil {
 				c.JSON(http.StatusBadRequest, err)
 			}

@@ -1,7 +1,7 @@
 package models
 
 import (
-	"errors"
+	"fmt"
 	wr "mtgpoolservice/weighted"
 )
 
@@ -11,13 +11,13 @@ func (s *Set) GetDefaultBoosterRule() (*BoosterRule, error) {
 			return &rule, nil
 		}
 	}
-	return nil, errors.New("did not find any default booster rule for set " + s.Code)
+	return nil, fmt.Errorf("packmaker: did not find any default booster rule for set %s", s.Code)
 }
 
 func (r *BoosterRule) GetRandomConfiguration() (*PackConfiguration, error) {
 	configurations := r.Boosters
 	if len(configurations) == 0 {
-		return nil, errors.New("Did not find any booster rule for " + r.SetID + " " + r.Name)
+		return nil, fmt.Errorf("packmaker: Did not find any booster rule for %s-%s", r.SetID, r.Name)
 	}
 
 	choices := make([]wr.Choice, 0)
