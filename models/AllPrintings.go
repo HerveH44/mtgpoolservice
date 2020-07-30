@@ -9,3 +9,8 @@ type AllPrintings struct {
 	Data map[string]Set `json:"data"`
 	Meta Meta           `json:"meta"`
 }
+
+type MonoSet struct {
+	Data Set  `json:"data"`
+	Meta Meta `json:"meta"`
+}
