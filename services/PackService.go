@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"math/rand"
 	"mtgpoolservice/db"
+	"mtgpoolservice/logging"
 	"mtgpoolservice/models"
 	"mtgpoolservice/models/entities"
 	"time"
@@ -18,12 +19,14 @@ func MakePacks(sets []string) (packs []models.Pool, err error) {
 		set, err := db.GetSet(setCode)
 		if err != nil {
 			fmt.Println(err)
+			logging.Warn(err)
 			return nil, errors.New("set " + setCode + "does not exist")
 		}
 
 		pack, err := MakePack(set)
 		if err != nil {
 			fmt.Println(err)
+			logging.Warn(err)
 			return nil, errors.New("could not produce pack for " + setCode)
 		}
 
@@ -53,6 +56,7 @@ func MakeCubePacks(req models.CubeSealedRequest) (packs []models.Pool, err error
 		pack, err := db.GetCardsByName(slicedList)
 		if err != nil {
 			fmt.Println(err)
+			logging.Warn(err)
 			return nil, fmt.Errorf("makecubepacks: could not produce pack")
 		}
 

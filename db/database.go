@@ -7,6 +7,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"mtgpoolservice/models"
 	"mtgpoolservice/models/entities"
+	"mtgpoolservice/setting"
 )
 
 type Database struct {
@@ -17,13 +18,18 @@ var DB *gorm.DB
 
 // Opening a database and save the reference to `Database` struct.
 func Init() *gorm.DB {
-	dsn := "host=localhost port=5432 user=postgres dbname=mtgpoolservice sslmode=disable"
-	db, err := gorm.Open("postgres", dsn)
+	db, err := gorm.Open(setting.DatabaseSetting.Type, fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable",
+		setting.DatabaseSetting.Host,
+		setting.DatabaseSetting.Port,
+		setting.DatabaseSetting.User,
+		setting.DatabaseSetting.Name))
+
 	if err != nil {
 		fmt.Println("entities err: ", err)
 	}
+
 	db.DB().SetMaxIdleConns(10)
-	//db.LogMode(true)
+	db.LogMode(true)
 
 	db.AutoMigrate(&entities.Set{})
 	db.AutoMigrate(&entities.Card{})
