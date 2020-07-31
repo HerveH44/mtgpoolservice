@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"mtgpoolservice/common"
+	"mtgpoolservice/db"
 	"mtgpoolservice/models"
-	"mtgpoolservice/models/mtgjson"
+	"mtgpoolservice/models/entities"
 	"time"
 )
 
@@ -14,7 +14,7 @@ func MakePacks(sets []string) (packs []models.Pool, err error) {
 	for i := 0; i < len(sets); i++ {
 		setCode := sets[i]
 
-		set, err := common.GetSet(setCode)
+		set, err := db.GetSet(setCode)
 		if err != nil {
 			fmt.Println(err)
 			return nil, errors.New("set " + setCode + "does not exist")
@@ -49,7 +49,7 @@ func MakeCubePacks(req models.CubeSealedRequest) (packs []models.Pool, err error
 		sliceUpperBound := sliceLowerBound + int(req.PlayerPoolSize)
 		slicedList := req.Cubelist[sliceLowerBound:sliceUpperBound]
 
-		pack, err := common.GetCardsByName(slicedList)
+		pack, err := db.GetCardsByName(slicedList)
 		if err != nil {
 			fmt.Println(err)
 			return nil, fmt.Errorf("makecubepacks: could not produce pack")
@@ -60,23 +60,18 @@ func MakeCubePacks(req models.CubeSealedRequest) (packs []models.Pool, err error
 	return
 }
 
-func MakePack(s *mtgjson.Set) (models.Pool, error) {
+func MakePack(s *entities.Set) (models.Pool, error) {
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	boosterRule, err := s.GetDefaultBoosterRule()
-	if err != nil {
-		//TODO: make a default booster
-		return nil, err
-	}
-
-	configuration, err := boosterRule.GetRandomConfiguration()
+	boosterConfiguration := s.BoosterConfiguration
+	configuration, err := boosterConfiguration.GetRandomConfiguration()
 	if err != nil {
 		return nil, err
 	}
 
-	protoCards := make([]mtgjson.ProtoCard, 0)
+	protoCards := make([]entities.ProtoCard, 0)
 	for _, confContent := range configuration.Contents {
-		sheet, err := boosterRule.GetSheet(confContent.SheetName)
+		sheet, err := boosterConfiguration.GetSheet(confContent.SheetName)
 		if err != nil {
 			return nil, err
 		}
@@ -85,7 +80,7 @@ func MakePack(s *mtgjson.Set) (models.Pool, error) {
 		protoCards = append(protoCards, randomCards...)
 	}
 
-	cards, err := common.GetCards(protoCards)
+	cards, err := db.GetCards(protoCards)
 	if err != nil {
 		return nil, err
 	}

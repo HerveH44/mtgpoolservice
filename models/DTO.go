@@ -1,6 +1,8 @@
 package models
 
-import "mtgpoolservice/models/mtgjson"
+import (
+	"mtgpoolservice/models/entities"
+)
 
 type RegularRequest struct {
 	Players int      `json:"players"`
@@ -10,7 +12,7 @@ type RegularRequest struct {
 type RegularDraftResponse [][]Pool
 
 type CardResponse struct {
-	mtgjson.Card
+	entities.Card
 
 	Id   string `json:"id"`
 	Foil bool   `json:"foil"`
@@ -24,12 +26,14 @@ type ChaosRequest struct {
 	Modern     bool `json:"modern"`
 	TotalChaos bool `json:"total_chaos"`
 }
+
 type CubeDraftRequest struct {
 	Cubelist       []string `json:"list"`
 	Players        uint     `json:"players`
 	PlayerPackSize uint     `json:"player_pack_size"`
 	Packs          uint     `json:"packs"`
 }
+
 type CubeSealedRequest struct {
 	Cubelist       []string `json:"list"`
 	Players        uint     `json:"players`

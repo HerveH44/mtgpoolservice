@@ -3,14 +3,14 @@ package tests
 import (
 	"encoding/json"
 	"fmt"
-	"mtgpoolservice/common"
+	"mtgpoolservice/db"
 	"mtgpoolservice/services"
 	"testing"
 )
 
 func TestGetPack(t *testing.T) {
-	common.Init()
-	set, err := common.GetSet("ISD")
+	db.Init()
+	set, err := db.GetSet("ISD")
 
 	if err != nil {
 		t.Error(err)
