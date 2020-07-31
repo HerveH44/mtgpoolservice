@@ -12,7 +12,7 @@ type RegularDraftResponse [][]Pool
 type CardResponse struct {
 	*entities.Card
 
-	Id   string `json:"id"`
+	Id   string `json:"cardId"`
 	Foil bool   `json:"foil"`
 }
 

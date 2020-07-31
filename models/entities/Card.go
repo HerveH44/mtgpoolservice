@@ -5,22 +5,23 @@ type Color struct {
 }
 
 type Card struct {
-	SetID             string
-	UUID              string
-	Name              string
-	Number            string
-	Layout            string
-	Loyalty           string
-	Power             string
-	Toughness         string
-	ConvertedManaCost float32
-	Type              string
-	ManaCost          string
-	Rarity            string
-	Side              string
-	IsAlternative     bool
-	Color             string
-	Colors            []Color `gorm:"many2many:card_colors;PRELOAD:true"`
-	//URL               string
+	SetID             string  `json:"setCode"`
+	UUID              string  `json:"uuid"`
+	Name              string  `json:"name"`
+	Number            string  `json:"number"`
+	Layout            string  `json:"layout"`
+	Loyalty           string  `json:"loyalty"`
+	Power             string  `json:"power"`
+	Toughness         string  `json:"toughness"`
+	ConvertedManaCost float32 `json:"convertedManaCost"`
+	Type              string  `json:"type"`
+	ManaCost          string  `json:"manaCost"`
+	Rarity            string  `json:"rarity"`
+	Side              string  `json:"side"`
+	IsAlternative     bool    `json:"isAlternative"`
+	Color             string  `json:"color"`
+	Colors            []Color `json:"colors" gorm:"many2many:card_colors;PRELOAD:true"`
+	ScryfallID        string  `json:"scryfallId"`
+	URL               string  `json:"url"`
 	//Names             []string  `gorm:"many2many:card_names;PRELOAD:true"`
 }

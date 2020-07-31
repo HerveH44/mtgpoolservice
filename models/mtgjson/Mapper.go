@@ -2,8 +2,10 @@ package mtgjson
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/jinzhu/gorm/dialects/postgres"
 	"mtgpoolservice/models/entities"
+	"strings"
 )
 
 func MapMTGJsonSetToEntity(mtgJsonSet MTGJsonSet) entities.Set {
@@ -67,11 +69,13 @@ func MakeCards(code string, cards []Card) (ret []entities.Card) {
 			ConvertedManaCost: card.ConvertedManaCost,
 			Type:              card.Types[0], //TODO: check if always true
 			ManaCost:          card.ManaCost,
-			Rarity:            card.Rarity,
+			Rarity:            strings.Title(card.Rarity),
 			Side:              card.Side,
 			IsAlternative:     card.IsAlternative,
-			Colors:            MakeColors(card.Colors),
 			Color:             GetColor(card.Colors),
+			Colors:            MakeColors(card.Colors),
+			ScryfallID:        card.Identifiers.ScryfallID,
+			URL:               fmt.Sprintf("https://api.scryfall.com/cards/%s?format=image", card.Identifiers.ScryfallID),
 		}
 
 		ret = append(ret, mappedCard)
@@ -96,10 +100,27 @@ func GetColor(colors []string) string {
 	}
 	switch len(colors) {
 	case 0:
-		return "colorless"
+		return "Colorless"
 	case 1:
-		return colors[0]
+		return translateColor(colors[0])
 	default:
-		return "multicolor"
+		return "Multicolor"
+	}
+}
+
+func translateColor(color string) string {
+	switch color {
+	case "W":
+		return "White"
+	case "B":
+		return "Black"
+	case "R":
+		return "Red"
+	case "U":
+		return "Blue"
+	case "G":
+		return "Green"
+	default:
+		return "Colorless"
 	}
 }

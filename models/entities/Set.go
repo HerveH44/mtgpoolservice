@@ -64,8 +64,8 @@ func (s *Set) GetCard(uuid string) (c *Card, err error) {
 	// Load cardsByUuid map
 	if len(s.cardsByUuid) == 0 {
 		s.cardsByUuid = make(map[string]*Card)
-		for _, card := range s.Cards {
-			s.cardsByUuid[card.UUID] = &card
+		for i, card := range s.Cards {
+			s.cardsByUuid[card.UUID] = &s.Cards[i]
 		}
 	}
 

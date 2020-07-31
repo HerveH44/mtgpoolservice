@@ -15,16 +15,14 @@ type Sheet struct {
 }
 
 func (s *Sheet) GetRandomCards(cardsNumber int) (ret []ProtoCard) {
+	choices := make([]utils.Choice, 0)
+	for _, conf := range s.Cards {
+		choices = append(choices, utils.NewChoice(conf, uint(conf.Weight)))
+	}
 
+	chooser := utils.NewChooser(choices...)
 	for i := 0; i < cardsNumber; i++ {
-		choices := make([]utils.Choice, 0)
-		for _, conf := range s.Cards {
-			choices = append(choices, utils.NewChoice(conf, uint(conf.Weight)))
-		}
-
-		chooser := utils.NewChooser(choices...)
 		pick := chooser.Pick().(SheetCard)
-
 		ret = append(ret, ProtoCard{
 			UUID: pick.UUID,
 			Foil: s.Foil,
