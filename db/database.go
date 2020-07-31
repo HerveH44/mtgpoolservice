@@ -28,11 +28,8 @@ func Init() *gorm.DB {
 	db.AutoMigrate(&entities.Set{})
 	db.AutoMigrate(&entities.Card{})
 	db.AutoMigrate(&entities.Color{})
-	db.AutoMigrate(&entities.BoosterRule{})
 	db.AutoMigrate(&entities.Sheet{})
 	db.AutoMigrate(&entities.SheetCard{})
-	db.AutoMigrate(&entities.PackConfiguration{})
-	db.AutoMigrate(&entities.ConfigurationContent{})
 	DB = db
 	return DB
 }

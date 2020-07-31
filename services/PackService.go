@@ -63,15 +63,14 @@ func MakeCubePacks(req models.CubeSealedRequest) (packs []models.Pool, err error
 func MakePack(s *entities.Set) (models.Pool, error) {
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	boosterConfiguration := s.BoosterConfiguration
-	configuration, err := boosterConfiguration.GetRandomConfiguration()
+	configuration, err := s.GetRandomConfiguration()
 	if err != nil {
 		return nil, err
 	}
 
 	protoCards := make([]entities.ProtoCard, 0)
 	for _, confContent := range configuration.Contents {
-		sheet, err := boosterConfiguration.GetSheet(confContent.SheetName)
+		sheet, err := s.GetSheet(confContent.SheetName)
 		if err != nil {
 			return nil, err
 		}
@@ -84,8 +83,6 @@ func MakePack(s *entities.Set) (models.Pool, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Printf("Found %s cards", cards)
 
 	return cards, nil
 }

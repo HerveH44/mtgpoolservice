@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm/dialects/postgres"
 	"log"
 	database "mtgpoolservice/db"
 	"mtgpoolservice/models"
 	"mtgpoolservice/models/entities"
 	"mtgpoolservice/models/mtgjson"
 	"mtgpoolservice/services"
-	"mtgpoolservice/utils"
 	"net/http"
 )
 
@@ -135,53 +135,21 @@ func main() {
 
 func MapMTGJsonSetToEntity(mtgJsonSet mtgjson.MTGJsonSet) entities.Set {
 	s := entities.Set{
-		Code:                 mtgJsonSet.Code,
-		Name:                 mtgJsonSet.Name,
-		Type:                 mtgJsonSet.Type,
-		ReleaseDate:          mtgJsonSet.ReleaseDate,
-		BaseSetSize:          mtgJsonSet.BaseSetSize,
-		Cards:                MakeCards(mtgJsonSet.Code, mtgJsonSet.Cards),
-		BoosterConfiguration: MakeConfiguration(mtgJsonSet.Code, mtgJsonSet.Booster.Default),
+		Code:               mtgJsonSet.Code,
+		Name:               mtgJsonSet.Name,
+		Type:               mtgJsonSet.Type,
+		ReleaseDate:        mtgJsonSet.ReleaseDate,
+		BaseSetSize:        mtgJsonSet.BaseSetSize,
+		Cards:              MakeCards(mtgJsonSet.Code, mtgJsonSet.Cards),
+		Sheets:             MakeSheets(mtgJsonSet.Code, mtgJsonSet.Booster.Default.Sheets),
+		PackConfigurations: MakePackConfigurations(mtgJsonSet.Booster.Default.Boosters),
 	}
 	return s
 }
 
-func MakeConfiguration(code string, rule mtgjson.BoosterRule) entities.BoosterRule {
-	br := entities.BoosterRule{
-		ID:                  code,
-		Sheets:              MakeSheets(code, rule.Sheets),
-		PackConfigurations:  MakePackConfigurations(code, rule.Boosters),
-		BoostersTotalWeight: rule.BoostersTotalWeight,
-	}
-
-	return br
-}
-
-func MakePackConfigurations(code string, configurations []mtgjson.PackConfiguration) (ret []entities.PackConfiguration) {
-
-	for _, conf := range configurations {
-		confId := code + "_" + utils.AsSha256(conf.Contents)
-		pc := entities.PackConfiguration{
-			ID:       confId,
-			SetID:    code,
-			Weight:   conf.Weight,
-			Contents: MakeContents(confId, conf.Contents),
-		}
-		ret = append(ret, pc)
-	}
-	return
-}
-
-func MakeContents(id string, contents mtgjson.Contents) (ret entities.Contents) {
-	for _, content := range contents {
-		c := entities.ConfigurationContent{
-			ConfigurationID: id,
-			SheetName:       content.SheetName,
-			CardsNumber:     content.CardsNumber,
-		}
-		ret = append(ret, c)
-	}
-	return
+func MakePackConfigurations(configurations []mtgjson.PackConfiguration) postgres.Jsonb {
+	jsonContent, _ := json.Marshal(configurations)
+	return postgres.Jsonb{RawMessage: jsonContent}
 }
 
 func MakeSheets(code string, sheets map[string]mtgjson.Sheet) (ret []entities.Sheet) {
