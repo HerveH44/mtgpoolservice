@@ -12,7 +12,9 @@ import (
 	"net/http"
 )
 
-var db = database.Init()
+func init() {
+	database.Init()
+}
 
 func main() {
 	r := gin.Default()
@@ -44,7 +46,7 @@ func main() {
 			i++
 			fmt.Printf("%d/%d - saving set %s\n", i, setsNumber, setName)
 			entity := mtgjson.MapMTGJsonSetToEntity(set)
-			if err := db.Save(&entity).Error; err != nil {
+			if err := database.GetDB().Save(&entity).Error; err != nil {
 				fmt.Printf("could not save the card %s - %s\n", setName, err)
 			}
 		}
@@ -67,7 +69,7 @@ func main() {
 
 		log.Println("main: saving set ", monoSet.Data.Name)
 		entity := mtgjson.MapMTGJsonSetToEntity(monoSet.Data)
-		if err := db.Save(&entity).Error; err != nil {
+		if err := database.GetDB().Save(&entity).Error; err != nil {
 			log.Fatal("main: could not save the set", monoSet.Data.Name, err)
 
 		}
