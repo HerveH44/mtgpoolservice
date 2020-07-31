@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"math/rand"
 	"mtgpoolservice/db"
 	"mtgpoolservice/models"
@@ -20,7 +21,7 @@ func MakePacks(sets []string) (packs []models.Pool, err error) {
 			return nil, errors.New("set " + setCode + "does not exist")
 		}
 
-		pack, err := MakePack(&set)
+		pack, err := MakePack(set)
 		if err != nil {
 			fmt.Println(err)
 			return nil, errors.New("could not produce pack for " + setCode)
@@ -79,10 +80,25 @@ func MakePack(s *entities.Set) (models.Pool, error) {
 		protoCards = append(protoCards, randomCards...)
 	}
 
-	cards, err := db.GetCards(protoCards)
+	cards, err := getCards(s, protoCards)
 	if err != nil {
 		return nil, err
 	}
 
 	return cards, nil
+}
+
+func getCards(s *entities.Set, protoCards []entities.ProtoCard) (cr []models.CardResponse, err error) {
+	for i, card := range protoCards {
+		c, err := s.GetCard(card.UUID)
+		if err != nil {
+			return nil, err
+		}
+		cr = append(cr, models.CardResponse{
+			Card: c,
+			Id:   uuid.New().String(),
+			Foil: protoCards[i].Foil,
+		})
+	}
+	return
 }

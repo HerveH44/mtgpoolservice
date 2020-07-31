@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jinzhu/gorm/dialects/postgres"
-	wr "mtgpoolservice/weighted"
+	"mtgpoolservice/utils"
 )
 
 type Set struct {
@@ -17,6 +17,9 @@ type Set struct {
 	Cards              []Card  `gorm:"foreignkey:SetID;PRELOAD:true"`
 	Sheets             []Sheet `gorm:"foreignkey:SetID;PRELOAD:true"`
 	PackConfigurations postgres.Jsonb
+
+	parsedConfigurations []PackConfiguration `gorm:"-"`
+	cardsByUuid          map[string]*Card    `gorm:"-"`
 }
 
 func (s *Set) GetSheet(name string) (*Sheet, error) {
@@ -35,23 +38,40 @@ func (s *Set) GetRandomConfiguration() (*PackConfiguration, error) {
 		return nil, fmt.Errorf("BoosterRule.GetRandomConfiguration: Did not find any booster rule for %s", s.Code)
 	}
 
-	choices := make([]wr.Choice, 0)
+	choices := make([]utils.Choice, 0)
 	for _, conf := range configurations {
-		choices = append(choices, wr.Choice{
-			Item:   conf,
-			Weight: uint(conf.Weight),
-		})
+		choices = append(choices, utils.NewChoice(conf, uint(conf.Weight)))
 	}
 
-	chooser := wr.NewChooser(choices...)
+	chooser := utils.NewChooser(choices...)
 	pick := chooser.Pick().(PackConfiguration)
 
 	return &pick, nil
 }
 
 func (s *Set) getPackConfigurations() (ret []PackConfiguration) {
+	if len(s.parsedConfigurations) > 0 {
+		return s.parsedConfigurations
+	}
 	if err := json.Unmarshal(s.PackConfigurations.RawMessage, &ret); err != nil {
 		fmt.Println("Set.getPackConfigurations()", "Could not parse json content for pack confs ", s.Code)
+	}
+	s.parsedConfigurations = ret
+	return
+}
+
+func (s *Set) GetCard(uuid string) (c *Card, err error) {
+	// Load cardsByUuid map
+	if len(s.cardsByUuid) == 0 {
+		s.cardsByUuid = make(map[string]*Card)
+		for _, card := range s.Cards {
+			s.cardsByUuid[card.UUID] = &card
+		}
+	}
+
+	c = s.cardsByUuid[uuid]
+	if c == nil {
+		return nil, fmt.Errorf("set[%s] card [%s] was not found in DB", s.Code, uuid)
 	}
 	return
 }

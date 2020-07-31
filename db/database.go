@@ -23,7 +23,7 @@ func Init() *gorm.DB {
 		fmt.Println("entities err: ", err)
 	}
 	db.DB().SetMaxIdleConns(10)
-	db.LogMode(true)
+	//db.LogMode(true)
 
 	db.AutoMigrate(&entities.Set{})
 	db.AutoMigrate(&entities.Card{})
@@ -39,40 +39,11 @@ func GetDB() *gorm.DB {
 	return DB
 }
 
-func GetSet(setCode string) (s entities.Set, err error) {
+func fetchSet(setCode string) (*entities.Set, error) {
 	fmt.Printf("fetching set %s\n", setCode)
-	err = DB.Where(" code = ?", setCode).Set("gorm:auto_preload", true).First(&s).Error
-	return
-}
-
-func GetCards(protoCards []entities.ProtoCard) (cr []models.CardResponse, err error) {
-	c := make([]entities.Card, 0)
-	fmt.Printf("fetching cards %s\n", protoCards)
-
-	uuids := make([]string, 0)
-	for _, protoCard := range protoCards {
-		uuids = append(uuids, protoCard.UUID)
-	}
-
-	err = DB.Where(" uuid IN (?)", uuids).Set("gorm:auto_preload", true).Find(&c).Error
-
-	for i, card := range protoCards {
-		cr = append(cr, models.CardResponse{
-			Card: *getCardFromSlice(card.UUID, c),
-			Id:   uuid.New().String(),
-			Foil: protoCards[i].Foil,
-		})
-	}
-	return
-}
-
-func getCardFromSlice(uuid string, cards []entities.Card) *entities.Card {
-	for _, card := range cards {
-		if card.UUID == uuid {
-			return &card
-		}
-	}
-	return nil
+	var s entities.Set
+	err := DB.Where(" code = ?", setCode).Set("gorm:auto_preload", true).First(&s).Error
+	return &s, err
 }
 
 func GetCardsByName(names []string) (cr []models.CardResponse, err error) {
@@ -83,7 +54,7 @@ func GetCardsByName(names []string) (cr []models.CardResponse, err error) {
 			return nil, fmt.Errorf("could not find cardResponse with name %s", name)
 		}
 		cardResponse := models.CardResponse{
-			Card: card,
+			Card: &card,
 			Id:   uuid.New().String(),
 			Foil: false,
 		}

@@ -1,8 +1,6 @@
 package models
 
-import (
-	"mtgpoolservice/models/entities"
-)
+import "mtgpoolservice/models/entities"
 
 type RegularRequest struct {
 	Players int      `json:"players"`
@@ -12,7 +10,7 @@ type RegularRequest struct {
 type RegularDraftResponse [][]Pool
 
 type CardResponse struct {
-	entities.Card
+	*entities.Card
 
 	Id   string `json:"id"`
 	Foil bool   `json:"foil"`

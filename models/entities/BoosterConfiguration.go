@@ -1,7 +1,7 @@
 package entities
 
 import (
-	wr "mtgpoolservice/weighted"
+	"mtgpoolservice/utils"
 )
 
 type Sheet struct {
@@ -17,15 +17,12 @@ type Sheet struct {
 func (s *Sheet) GetRandomCards(cardsNumber int) (ret []ProtoCard) {
 
 	for i := 0; i < cardsNumber; i++ {
-		choices := make([]wr.Choice, 0)
+		choices := make([]utils.Choice, 0)
 		for _, conf := range s.Cards {
-			choices = append(choices, wr.Choice{
-				Item:   conf,
-				Weight: uint(conf.Weight),
-			})
+			choices = append(choices, utils.NewChoice(conf, uint(conf.Weight)))
 		}
 
-		chooser := wr.NewChooser(choices...)
+		chooser := utils.NewChooser(choices...)
 		pick := chooser.Pick().(SheetCard)
 
 		ret = append(ret, ProtoCard{
