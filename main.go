@@ -7,6 +7,7 @@ import (
 	"log"
 	"mtgpoolservice/common"
 	"mtgpoolservice/models"
+	"mtgpoolservice/models/mtgjson"
 	"mtgpoolservice/services"
 	"net/http"
 )
@@ -31,7 +32,7 @@ func main() {
 		}
 		defer resp.Body.Close()
 
-		allPrintings := new(models.AllPrintings)
+		allPrintings := new(mtgjson.AllPrintings)
 		if err := json.NewDecoder(resp.Body).Decode(allPrintings); err != nil {
 			log.Println("error while unmarshalling allPrintings", err)
 		}
@@ -57,7 +58,7 @@ func main() {
 		}
 		defer resp.Body.Close()
 
-		monoSet := new(models.MonoSet)
+		monoSet := new(mtgjson.MTGJsonSet)
 		if err := json.NewDecoder(resp.Body).Decode(monoSet); err != nil {
 			log.Println("main: error while unmarshalling monoSet", err)
 		}
@@ -68,19 +69,61 @@ func main() {
 		}
 	})
 	r.POST("/regular/draft", func(c *gin.Context) {
-		var request models.RegularDraftRequest
+		var request models.RegularRequest
 		if err := c.ShouldBindJSON(&request); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		ret := make([][]models.Pack, 0)
+		ret := make([][]models.Pool, 0)
 		for p := 0; p < request.Players; p++ {
 			packs, err := services.MakePacks(request.Sets)
 			if err != nil {
 				c.JSON(http.StatusBadRequest, err)
 			}
 			ret = append(ret, packs)
+		}
+		c.JSON(http.StatusOK, ret)
+	})
+	r.POST("/regular/sealed", func(c *gin.Context) {
+		var request models.RegularRequest
+		if err := c.ShouldBindJSON(&request); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		ret := make([]models.Pool, request.Players)
+		for p := 0; p < request.Players; p++ {
+			pa := make(models.Pool, 0)
+			packs, err := services.MakePacks(request.Sets)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			}
+			for _, pack := range packs {
+				pa = append(pa, pack...)
+			}
+			ret[p] = pa
+		}
+		c.JSON(http.StatusOK, ret)
+	})
+	r.POST("/cube/sealed", func(c *gin.Context) {
+		var request models.CubeSealedRequest
+		if err := c.ShouldBindJSON(&request); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		ret := make([]models.Pool, request.Players)
+		for p := 0; p < int(request.Players); p++ {
+			pa := make(models.Pool, 0)
+			packs, err := services.MakeCubePacks(request)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			}
+			for _, pack := range packs {
+				pa = append(pa, pack...)
+			}
+			ret[p] = pa
 		}
 		c.JSON(http.StatusOK, ret)
 	})

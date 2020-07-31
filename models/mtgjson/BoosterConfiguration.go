@@ -1,4 +1,4 @@
-package models
+package mtgjson
 
 import (
 	"crypto/sha256"

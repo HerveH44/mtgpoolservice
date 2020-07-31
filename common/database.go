@@ -6,6 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"mtgpoolservice/models"
+	"mtgpoolservice/models/mtgjson"
 )
 
 type Database struct {
@@ -24,16 +25,16 @@ func Init() *gorm.DB {
 	db.DB().SetMaxIdleConns(10)
 	db.LogMode(true)
 
-	db.AutoMigrate(&models.Set{})
-	db.AutoMigrate(&models.Card{})
-	db.AutoMigrate(&models.Color{})
-	db.AutoMigrate(&models.Type{})
-	db.AutoMigrate(&models.Supertype{})
-	db.AutoMigrate(&models.BoosterRule{})
-	db.AutoMigrate(&models.PackConfiguration{})
-	db.AutoMigrate(&models.Sheet{})
-	db.AutoMigrate(&models.SheetCard{})
-	db.AutoMigrate(&models.ConfigurationContent{})
+	db.AutoMigrate(&mtgjson.Set{})
+	db.AutoMigrate(&mtgjson.Card{})
+	db.AutoMigrate(&mtgjson.Color{})
+	db.AutoMigrate(&mtgjson.Type{})
+	db.AutoMigrate(&mtgjson.Supertype{})
+	db.AutoMigrate(&mtgjson.BoosterRule{})
+	db.AutoMigrate(&mtgjson.PackConfiguration{})
+	db.AutoMigrate(&mtgjson.Sheet{})
+	db.AutoMigrate(&mtgjson.SheetCard{})
+	db.AutoMigrate(&mtgjson.ConfigurationContent{})
 	DB = db
 	return DB
 }
@@ -43,14 +44,14 @@ func GetDB() *gorm.DB {
 	return DB
 }
 
-func GetSet(setCode string) (s models.Set, err error) {
+func GetSet(setCode string) (s mtgjson.Set, err error) {
 	fmt.Printf("fetching set %s\n", setCode)
 	err = DB.Where(" code = ?", setCode).Set("gorm:auto_preload", true).First(&s).Error
 	return
 }
 
-func GetCards(protoCards []models.ProtoCard) (cr []models.CardResponse, err error) {
-	c := make([]models.Card, 0)
+func GetCards(protoCards []mtgjson.ProtoCard) (cr []models.CardResponse, err error) {
+	c := make([]mtgjson.Card, 0)
 	fmt.Printf("fetching cards %s\n", protoCards)
 
 	uuids := make([]string, 0)
@@ -60,12 +61,39 @@ func GetCards(protoCards []models.ProtoCard) (cr []models.CardResponse, err erro
 
 	err = DB.Where(" uuid IN (?)", uuids).Set("gorm:auto_preload", true).Find(&c).Error
 
-	for i, card := range c {
+	for i, card := range protoCards {
 		cr = append(cr, models.CardResponse{
-			Card: card,
+			Card: *getCardFromSlice(card.UUID, c),
 			Id:   uuid.New().String(),
 			Foil: protoCards[i].Foil,
 		})
 	}
+	return
+}
+
+func getCardFromSlice(uuid string, cards []mtgjson.Card) *mtgjson.Card {
+	for _, card := range cards {
+		if card.UUID == uuid {
+			return &card
+		}
+	}
+	return nil
+}
+
+func GetCardsByName(names []string) (cr []models.CardResponse, err error) {
+	for _, name := range names {
+		var card mtgjson.Card
+		err = DB.Where("name ILIKE ?", name).Set("gorm:auto_preload", true).First(&card).Error
+		if err != nil {
+			return nil, fmt.Errorf("could not find cardResponse with name %s", name)
+		}
+		cardResponse := models.CardResponse{
+			Card: card,
+			Id:   uuid.New().String(),
+			Foil: false,
+		}
+		cr = append(cr, cardResponse)
+	}
+
 	return
 }

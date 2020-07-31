@@ -1,4 +1,4 @@
-package models
+package mtgjson
 
 type Meta struct {
 	Date    string `json:"date"`

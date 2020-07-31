@@ -1,6 +1,8 @@
-package models
+package mtgjson
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type Set struct {
 	Code        string       `json:"code" gorm:"primary_key"`
@@ -69,23 +71,21 @@ func (i *Name) MarshalJSON() ([]byte, error) {
 }
 
 type Card struct {
-	UUID   string `json:"uuid" gorm:"primary_key"`
-	Name   string `json:"name"`
-	Number string `json:"number"`
-	Layout string `json:"layout"`
-	//Names             []Name      `json:"names" gorm:"many2many:card_names;PRELOAD:true"`
-	Loyalty           string      `json:"loyalty"`
-	Power             string      `json:"power"`
-	Toughness         string      `json:"toughness"`
-	ConvertedManaCost float32     `json:"convertedManaCost"`
-	Colors            []Color     `json:"colors" gorm:"many2many:card_colors;PRELOAD:true"`
-	Types             []Type      `json:"types" gorm:"many2many:card_types;PRELOAD:true"`
-	Supertypes        []Supertype `json:"supertypes" gorm:"many2many:card_supertypes;PRELOAD:true"`
-	ManaCost          string      `json:"manaCost"`
-	URL               string      `json:"url"`
-	Rarity            string      `json:"rarity"`
-	ScryfallID        string      `json:"scryfallId"`
-	Side              string      `json:"side"`
-	IsAlternative     bool        `json:"isAlternative"`
 	SetID             string
+	UUID              string  `json:"uuid" gorm:"primary_key"`
+	Name              string  `json:"name"`
+	Number            string  `json:"number"`
+	Layout            string  `json:"layout"`
+	Loyalty           string  `json:"loyalty"`
+	Power             string  `json:"power"`
+	Toughness         string  `json:"toughness"`
+	ConvertedManaCost float32 `json:"convertedManaCost"`
+	Type              string  `json:"type`
+	ManaCost          string  `json:"manaCost"`
+	URL               string  `json:"url"`
+	Rarity            string  `json:"rarity"`
+	Side              string  `json:"side"`
+	IsAlternative     bool    `json:"isAlternative"`
+	Colors            []Color `json:"colors" gorm:"many2many:card_colors;PRELOAD:true"`
+	//Names             []Name      `json:"names" gorm:"many2many:card_names;PRELOAD:true"`
 }
