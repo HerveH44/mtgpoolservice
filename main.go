@@ -43,7 +43,8 @@ func main() {
 		for setName, set := range allPrintings.Data {
 			i++
 			fmt.Printf("%d/%d - saving set %s\n", i, setsNumber, setName)
-			if err := db.Save(&set).Error; err != nil {
+			entity := mtgjson.MapMTGJsonSetToEntity(set)
+			if err := db.Save(&entity).Error; err != nil {
 				fmt.Printf("could not save the card %s - %s\n", setName, err)
 			}
 		}
@@ -61,12 +62,14 @@ func main() {
 		monoSet := new(mtgjson.MonoSet)
 		if err := json.NewDecoder(resp.Body).Decode(monoSet); err != nil {
 			log.Println("main: error while unmarshalling monoSet", err)
+			return
 		}
 
-		log.Println("saving cards from ", monoSet.Data.Name)
+		log.Println("main: saving set ", monoSet.Data.Name)
 		entity := mtgjson.MapMTGJsonSetToEntity(monoSet.Data)
 		if err := db.Save(&entity).Error; err != nil {
-			log.Fatal("main: could not save the card", monoSet.Data.Name, err)
+			log.Fatal("main: could not save the set", monoSet.Data.Name, err)
+
 		}
 	})
 	r.POST("/regular/draft", func(c *gin.Context) {
@@ -81,6 +84,7 @@ func main() {
 			packs, err := services.MakePacks(request.Sets)
 			if err != nil {
 				c.JSON(http.StatusBadRequest, err)
+				return
 			}
 			ret = append(ret, packs)
 		}
@@ -99,6 +103,7 @@ func main() {
 			packs, err := services.MakePacks(request.Sets)
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
 			}
 			for _, pack := range packs {
 				pa = append(pa, pack...)
@@ -120,6 +125,7 @@ func main() {
 			packs, err := services.MakeCubePacks(request)
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
 			}
 			for _, pack := range packs {
 				pa = append(pa, pack...)
