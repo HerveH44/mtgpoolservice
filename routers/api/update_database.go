@@ -10,19 +10,26 @@ import (
 	"net/http"
 )
 
-func Refresh(context *gin.Context) {
-	log.Println("Refresh data")
+func RefreshSetsInDB(context *gin.Context) {
+	err := UpdateSets()
+	if err != nil {
+		context.JSON(500, gin.H{"error": "unexpected error"})
+	}
+}
+
+func UpdateSets() error {
+	log.Println("Refreshing sets")
 	resp, err := http.Get("http://mtgjson.com/api/v5/AllPrintings.json")
 	if err != nil {
 		log.Println("Could not fetch the MTGJson allPrintings")
-		context.JSON(500, "unexpected error")
-		return
+		return err
 	}
 	defer resp.Body.Close()
 
 	allPrintings := new(mtgjson.AllPrintings)
 	if err := json.NewDecoder(resp.Body).Decode(allPrintings); err != nil {
 		log.Println("error while unmarshalling allPrintings", err)
+		return err
 	}
 	var setsNumber = len(allPrintings.Data)
 	log.Println("sets found", setsNumber)
@@ -34,12 +41,14 @@ func Refresh(context *gin.Context) {
 		entity := mtgjson.MapMTGJsonSetToEntity(set)
 		if err := database.GetDB().Save(&entity).Error; err != nil {
 			fmt.Printf("could not save the card %s - %s\n", setName, err)
+			return err
 		}
 	}
+	return nil
 }
 
 func RefreshSet(context *gin.Context) {
-	log.Println("Refresh data")
+	log.Println("RefreshSetsInDB data")
 	resp, err := http.Get("http://mtgjson.com/api/v5/ISD.json")
 	if err != nil {
 		log.Println("Could not fetch the MTGJson monoSet")

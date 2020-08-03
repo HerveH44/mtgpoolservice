@@ -11,7 +11,7 @@ func InitRouter() *gin.Engine {
 	r.GET("/ping", api.Ping)
 
 	//Update DB
-	r.GET("/refresh", api.Refresh)
+	r.GET("/refresh", api.RefreshSetsInDB)
 	r.GET("/refresh/:setCode", api.RefreshSet)
 
 	r.POST("/regular", api.RegularPacks)

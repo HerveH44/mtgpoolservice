@@ -1,8 +1,37 @@
 package mtgjson
 
+import (
+	"strings"
+	"time"
+)
+
 type Meta struct {
-	Date    string `json:"date"`
-	Version string `json:"version"`
+	Date    VersionDate `json:"date"`
+	Version string      `json:"version"`
+}
+
+type VersionDate time.Time
+
+func (v *VersionDate) UnmarshalJSON(b []byte) error {
+	s := strings.Trim(string(b), "\"")
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return err
+	}
+	*v = VersionDate(t)
+	return nil
+}
+
+type Version struct {
+	Data struct {
+		Date    VersionDate `json:"date"`
+		Version string      `json:"version"`
+	} `json:"data"`
+
+	Meta struct {
+		Date    VersionDate `json:"date"`
+		Version string      `json:"version"`
+	} `json:"meta"`
 }
 
 /**

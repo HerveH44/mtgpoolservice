@@ -36,6 +36,7 @@ func Init() *gorm.DB {
 	db.AutoMigrate(&entities.Color{})
 	db.AutoMigrate(&entities.Sheet{})
 	db.AutoMigrate(&entities.SheetCard{})
+	db.AutoMigrate(&entities.Version{})
 	DB = db
 	return DB
 }
@@ -50,6 +51,12 @@ func fetchSet(setCode string) (*entities.Set, error) {
 	var s entities.Set
 	err := DB.Where(" code = ?", setCode).Set("gorm:auto_preload", true).First(&s).Error
 	return &s, err
+}
+
+func FetchLastVersion() (*entities.Version, error) {
+	var v entities.Version
+	err := DB.Order("date DESC").First(&v).Error
+	return &v, err
 }
 
 func GetCardsByName(names []string) (cr []models.CardResponse, err error) {
