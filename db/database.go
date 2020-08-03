@@ -8,7 +8,6 @@ import (
 	"mtgpoolservice/models"
 	"mtgpoolservice/models/entities"
 	"mtgpoolservice/setting"
-	"os"
 )
 
 type Database struct {
@@ -19,16 +18,19 @@ var DB *gorm.DB
 
 // Opening a database and save the reference to `Database` struct.
 func Init() *gorm.DB {
-	dbURL := os.Getenv("DATABASE_URL")
-	fmt.Println(dbURL)
-	db, err := gorm.Open(setting.DatabaseSetting.Type, dbURL)
+	db, err := gorm.Open(setting.DatabaseSetting.Type, fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s",
+		setting.DatabaseSetting.Host,
+		setting.DatabaseSetting.Port,
+		setting.DatabaseSetting.User,
+		setting.DatabaseSetting.Name,
+		setting.DatabaseSetting.Password))
 
 	if err != nil {
 		fmt.Println("entities err: ", err)
 	}
 
 	db.DB().SetMaxIdleConns(10)
-	db.LogMode(true)
+	db.LogMode(setting.DatabaseSetting.Log)
 
 	db.AutoMigrate(&entities.Set{})
 	db.AutoMigrate(&entities.Card{})

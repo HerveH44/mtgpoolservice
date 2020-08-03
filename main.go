@@ -14,7 +14,6 @@ import (
 	"mtgpoolservice/routers/api"
 	"mtgpoolservice/setting"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -29,7 +28,7 @@ func main() {
 	routersInit := routers.InitRouter()
 	readTimeout := setting.ServerSetting.ReadTimeout
 	writeTimeout := setting.ServerSetting.WriteTimeout
-	port := os.Getenv("PORT")
+	port := setting.ServerSetting.HttpPort
 	endPoint := fmt.Sprintf(":%s", port)
 	maxHeaderBytes := 1 << 20
 
