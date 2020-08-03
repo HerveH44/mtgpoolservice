@@ -9,6 +9,7 @@ func InitRouter() *gin.Engine {
 	r := gin.Default()
 
 	r.GET("/ping", api.Ping)
+	r.GET("/about", api.Version)
 
 	//Update DB
 	r.GET("/refresh", api.RefreshSetsInDB)

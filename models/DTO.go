@@ -2,6 +2,11 @@ package models
 
 import "mtgpoolservice/models/entities"
 
+type VersionResponse struct {
+	Date    string `json:"date"`
+	Version string `json:"version"`
+}
+
 type RegularRequest struct {
 	Players int      `json:"players"`
 	Sets    []string `json:"sets"`
