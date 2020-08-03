@@ -30,7 +30,7 @@ func main() {
 	readTimeout := setting.ServerSetting.ReadTimeout
 	writeTimeout := setting.ServerSetting.WriteTimeout
 	port := os.Getenv("PORT")
-	endPoint := fmt.Sprintf(":%d", port)
+	endPoint := fmt.Sprintf(":%s", port)
 	maxHeaderBytes := 1 << 20
 
 	// Check for DB Update
@@ -45,7 +45,7 @@ func main() {
 		MaxHeaderBytes: maxHeaderBytes,
 	}
 
-	log.Printf("[info] start http server listening %d", endPoint)
+	log.Printf("[info] start http server listening %s", endPoint)
 
 	server.ListenAndServe()
 }
