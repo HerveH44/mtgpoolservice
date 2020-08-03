@@ -47,6 +47,14 @@ func GetDB() *gorm.DB {
 	return DB
 }
 
+func GetSets() ([]entities.Set, error) {
+	s := make([]entities.Set, 0)
+	if err := DB.Order("release_date DESC").Find(&s).Error; err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
 func fetchSet(setCode string) (*entities.Set, error) {
 	fmt.Printf("fetching set %s\n", setCode)
 	var s entities.Set

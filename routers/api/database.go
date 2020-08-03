@@ -6,9 +6,46 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	database "mtgpoolservice/db"
+	"mtgpoolservice/models"
 	"mtgpoolservice/models/mtgjson"
 	"net/http"
+	"sort"
 )
+
+func AvailableSets(context *gin.Context) {
+	sets, err := database.GetSets()
+
+	if err != nil {
+		context.JSON(500, gin.H{"error": "unexpected error"})
+		return
+	}
+
+	setMap := make(map[string][]models.SetResponse)
+	playableSetTypes := []string{"core", "expansion", "draft_innovation", "funny", "starter", "masters"}
+	for _, t := range playableSetTypes {
+		setMap[t] = make([]models.SetResponse, 0)
+	}
+	sort.Strings(playableSetTypes)
+	for _, set := range sets {
+		setType := set.Type
+		i := sort.SearchStrings(playableSetTypes, setType)
+		if i >= len(playableSetTypes) || playableSetTypes[i] != setType {
+			fmt.Println("Found a bad Set!", set.Name, set.Type)
+			continue
+		}
+		setMap[setType] = append(setMap[setType], models.SetResponse{
+			Code: set.Code,
+			Name: set.Name,
+		})
+	}
+	setMap["random"] = make([]models.SetResponse, 0)
+	setMap["random"] = append(setMap["random"], models.SetResponse{
+		Code: "RNG",
+		Name: "Random Set",
+	})
+
+	context.JSON(http.StatusOK, setMap)
+}
 
 func RefreshSetsInDB(context *gin.Context) {
 	err := UpdateSets()

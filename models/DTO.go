@@ -2,6 +2,11 @@ package models
 
 import "mtgpoolservice/models/entities"
 
+type SetResponse struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
 type VersionResponse struct {
 	Date    string `json:"date"`
 	Version string `json:"version"`
