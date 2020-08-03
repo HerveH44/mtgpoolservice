@@ -6,9 +6,7 @@ import (
 )
 
 func InitRouter() *gin.Engine {
-	r := gin.New()
-	r.Use(gin.Logger())
-	r.Use(gin.Recovery())
+	r := gin.Default()
 
 	r.GET("/ping", api.Ping)
 
