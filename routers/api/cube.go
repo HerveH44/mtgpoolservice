@@ -25,3 +25,18 @@ func CubePacks(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, ret)
 }
+
+func CubeList(c *gin.Context) {
+	var request models.CubeListRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	errs := services.CheckCubeList(request)
+	if len(errs) > 0 {
+		c.JSON(http.StatusBadRequest, errs)
+	} else {
+		c.Status(200)
+	}
+}

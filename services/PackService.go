@@ -9,6 +9,8 @@ import (
 	"mtgpoolservice/logging"
 	"mtgpoolservice/models"
 	"mtgpoolservice/models/entities"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -41,6 +43,11 @@ func Shuffle(a []models.CardResponse) {
 	rand.Shuffle(len(a), func(i, j int) { a[i], a[j] = a[j], a[i] })
 }
 
+func CheckCubeList(req models.CubeListRequest) (invalidCards []string) {
+	invalidCards = db.CheckCubeCards(req.Cubelist[:])
+	return
+}
+
 func MakeCubePacks(req models.CubeDraftRequest) (packs []models.Pool, err error) {
 	if int(req.PlayerPackSize)*int(req.Players)*int(req.Packs) > len(req.Cubelist) {
 		return nil, fmt.Errorf("MakeCubePacks: cube list too small")
@@ -48,7 +55,9 @@ func MakeCubePacks(req models.CubeDraftRequest) (packs []models.Pool, err error)
 
 	cubeCards, err := db.GetCardsByName(req.Cubelist)
 	if len(cubeCards) != len(req.Cubelist) {
+		missingCards := GetMissingCards(req.Cubelist[:], cubeCards[:])
 		fmt.Println("MakeCubePacks: could not find all the cards. Expected ", len(req.Cubelist), " cards but found ", len(cubeCards), "cards instead")
+		fmt.Println(missingCards)
 	}
 
 	Shuffle(cubeCards[:])
@@ -63,6 +72,18 @@ func MakeCubePacks(req models.CubeDraftRequest) (packs []models.Pool, err error)
 		slicedList := cubeCards[sliceLowerBound:sliceUpperBound]
 
 		packs = append(packs, slicedList)
+	}
+	return
+}
+
+func GetMissingCards(cubeList []string, fetchedCards []models.CardResponse) (ret []string) {
+	sort.Strings(cubeList)
+
+	for _, card := range fetchedCards {
+		index := sort.SearchStrings(cubeList, strings.ToLower(card.Name))
+		if index >= len(cubeList) || cubeList[index] != strings.ToLower(card.Name) {
+			ret = append(ret, card.Name)
+		}
 	}
 	return
 }

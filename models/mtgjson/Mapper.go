@@ -58,7 +58,7 @@ func MakeSheetCards(sheetId string, cards SheetCards) (ret []entities.SheetCard)
 
 func MakeCards(code string, cards []Card, isCubable func(string, []string) bool) (ret []entities.Card) {
 	for _, card := range cards {
-		if card.IsPromo || card.IsAlternative || card.IsStarter {
+		if card.IsPromo || card.IsAlternative {
 			continue
 		}
 
@@ -92,7 +92,7 @@ func MakeCards(code string, cards []Card, isCubable func(string, []string) bool)
 
 func MakeFaceName(faceName string, name string) string {
 	if faceName != "" {
-		return faceName
+		return strings.ToLower(faceName)
 	}
 	return strings.ToLower(strings.Split(name, " // ")[0])
 }

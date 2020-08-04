@@ -42,6 +42,10 @@ type CubeDraftRequest struct {
 	Packs          uint     `json:"packs"`
 }
 
+type CubeListRequest struct {
+	Cubelist []string `json:"list"`
+}
+
 type CubeSealedRequest struct {
 	Cubelist       []string `json:"list"`
 	Players        uint     `json:"players`

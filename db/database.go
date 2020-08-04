@@ -5,10 +5,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"log"
 	"mtgpoolservice/logging"
 	"mtgpoolservice/models"
 	"mtgpoolservice/models/entities"
 	"mtgpoolservice/setting"
+	"sort"
 	"strings"
 )
 
@@ -68,6 +70,36 @@ func FetchLastVersion() (*entities.Version, error) {
 	var v entities.Version
 	err := DB.Order("date DESC").First(&v).Error
 	return &v, err
+}
+
+func CheckCubeCards(names []string) (missingCardNames []string) {
+	rows, err := DB.Raw("SELECT DISTINCT face_name FROM cards WHERE cubable = true ORDER BY face_name ASC").Rows()
+	if err != nil {
+		log.Println(err)
+	}
+	defer rows.Close()
+	name := ""
+	result := make([]string, 0)
+	for rows.Next() {
+		rows.Scan(&name)
+		result = append(result, name)
+	}
+	for _, name := range names {
+		faceName := strings.ToLower(strings.Split(name, " // ")[0])
+		if !include(result[:], faceName) {
+			missingCardNames = append(missingCardNames, name)
+		}
+	}
+	return
+}
+
+func include(arr []string, val string) bool {
+	sort.Strings(arr)
+	i := sort.SearchStrings(arr, val)
+	if i >= len(arr) || arr[i] != val {
+		return false
+	}
+	return true
 }
 
 func GetCardsByName(names []string) (cr []models.CardResponse, err error) {
