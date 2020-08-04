@@ -66,6 +66,7 @@ func RefreshSetsInDB(context *gin.Context) {
 	if err != nil {
 		context.JSON(500, gin.H{"error": "unexpected error"})
 	}
+	context.JSON(200, gin.H{"success": "ok"})
 }
 
 func UpdateSets() error {
@@ -109,7 +110,15 @@ func buildIsCubableFunc(orderedSetCodes map[string]int) func(string, []string) b
 		sort.SliceStable(printings, func(i, j int) bool {
 			setCode1 := printings[i]
 			setCode2 := printings[j]
-			return orderedSetCodes[setCode1] < orderedSetCodes[setCode2]
+			set1Index, ok := orderedSetCodes[setCode1]
+			if !ok {
+				return false
+			}
+			set2Index, ok := orderedSetCodes[setCode2]
+			if !ok {
+				return true
+			}
+			return set1Index < set2Index
 		})
 
 		if setCode == printings[0] {
@@ -120,10 +129,13 @@ func buildIsCubableFunc(orderedSetCodes map[string]int) func(string, []string) b
 	}
 }
 
+var notCubableSetTypes = []string{"box", "masterpiece", "memorabilia", "promo", "spellbook"}
+
 func orderSetsByDate(m *map[string]mtgjson.MTGJsonSet) map[string]int {
 	r := make([]string, 0)
 	for setCode, set := range *m {
-		if set.Type != "masterpiece" {
+		index := sort.SearchStrings(notCubableSetTypes, set.Type)
+		if index >= len(notCubableSetTypes) || notCubableSetTypes[index] != set.Type {
 			r = append(r, setCode)
 		}
 	}
@@ -162,7 +174,9 @@ func RefreshSet(context *gin.Context) {
 	}
 
 	log.Println("main: saving set ", monoSet.Data.Name)
-	entity := mtgjson.MapMTGJsonSetToEntity(monoSet.Data, nil)
+	entity := mtgjson.MapMTGJsonSetToEntity(monoSet.Data, func(s string, i []string) bool {
+		return false
+	})
 	if err := database.GetDB().Save(&entity).Error; err != nil {
 		log.Fatal("main: could not save the set", monoSet.Data.Name, err)
 

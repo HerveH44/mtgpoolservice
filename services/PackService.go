@@ -36,31 +36,33 @@ func MakePacks(sets []string) (packs []models.Pool, err error) {
 }
 
 // Shuffle shuffles the array parameter in place
-func Shuffle(a []string) {
+func Shuffle(a []models.CardResponse) {
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(a), func(i, j int) { a[i], a[j] = a[j], a[i] })
 }
 
-func MakeCubePacks(req models.CubeSealedRequest) (packs []models.Pool, err error) {
-	if int(req.PlayerPoolSize)*int(req.Players) > len(req.Cubelist) {
-		return nil, fmt.Errorf("makecubepack: cube list too small")
+func MakeCubePacks(req models.CubeDraftRequest) (packs []models.Pool, err error) {
+	if int(req.PlayerPackSize)*int(req.Players)*int(req.Packs) > len(req.Cubelist) {
+		return nil, fmt.Errorf("MakeCubePacks: cube list too small")
 	}
 
-	Shuffle(req.Cubelist)
+	cubeCards, err := db.GetCardsByName(req.Cubelist)
+	if len(cubeCards) != len(req.Cubelist) {
+		fmt.Println("MakeCubePacks: could not find all the cards. Expected ", len(req.Cubelist), " cards but found ", len(cubeCards), "cards instead")
+	}
 
-	for i := 0; i < int(req.Players); i++ {
-		sliceLowerBound := i * int(req.PlayerPoolSize)
-		sliceUpperBound := sliceLowerBound + int(req.PlayerPoolSize)
-		slicedList := req.Cubelist[sliceLowerBound:sliceUpperBound]
+	Shuffle(cubeCards[:])
+	if err != nil {
+		fmt.Println(err)
+		logging.Warn(err)
+		return nil, fmt.Errorf("MakeCubePacks: could not produce pack")
+	}
+	for i := 0; i < int(req.Players)*int(req.Packs); i++ {
+		sliceLowerBound := i * int(req.PlayerPackSize)
+		sliceUpperBound := sliceLowerBound + int(req.PlayerPackSize)
+		slicedList := cubeCards[sliceLowerBound:sliceUpperBound]
 
-		pack, err := db.GetCardsByName(slicedList)
-		if err != nil {
-			fmt.Println(err)
-			logging.Warn(err)
-			return nil, fmt.Errorf("makecubepacks: could not produce pack")
-		}
-
-		packs = append(packs, pack)
+		packs = append(packs, slicedList)
 	}
 	return
 }

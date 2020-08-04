@@ -23,8 +23,6 @@ func MapMTGJsonSetToEntity(mtgJsonSet MTGJsonSet, isCubable func(string, []strin
 	return s
 }
 
-//func isCubable()
-
 func MakePackConfigurations(configurations []PackConfiguration) postgres.Jsonb {
 	jsonContent, _ := json.Marshal(configurations)
 	return postgres.Jsonb{RawMessage: jsonContent}
@@ -60,6 +58,10 @@ func MakeSheetCards(sheetId string, cards SheetCards) (ret []entities.SheetCard)
 
 func MakeCards(code string, cards []Card, isCubable func(string, []string) bool) (ret []entities.Card) {
 	for _, card := range cards {
+		if card.IsPromo || card.IsAlternative || card.IsStarter {
+			continue
+		}
+
 		mappedCard := entities.Card{
 			SetID:             code,
 			UUID:              card.UUID,
@@ -69,17 +71,17 @@ func MakeCards(code string, cards []Card, isCubable func(string, []string) bool)
 			Loyalty:           card.Loyalty,
 			Power:             card.Power,
 			Toughness:         card.Toughness,
-			ConvertedManaCost: card.ConvertedManaCost,
+			ConvertedManaCost: int(card.ConvertedManaCost),
 			Type:              card.Types[0], //TODO: check if always true
 			ManaCost:          card.ManaCost,
 			Rarity:            strings.Title(card.Rarity),
 			Side:              card.Side,
 			IsAlternative:     card.IsAlternative,
 			Color:             GetColor(card.Colors),
-			Colors:            MakeColors(card.Colors),
 			ScryfallID:        card.Identifiers.ScryfallID,
 			URL:               fmt.Sprintf("https://api.scryfall.com/cards/%s?format=image", card.Identifiers.ScryfallID),
 			Cubable:           isCubable(code, card.Printings),
+			FaceName:          MakeFaceName(card.FaceName, card.Name),
 		}
 
 		ret = append(ret, mappedCard)
@@ -88,14 +90,11 @@ func MakeCards(code string, cards []Card, isCubable func(string, []string) bool)
 	return
 }
 
-func MakeColors(colors []string) (ret []entities.Color) {
-	for _, color := range colors {
-		c := entities.Color{
-			ID: color,
-		}
-		ret = append(ret, c)
+func MakeFaceName(faceName string, name string) string {
+	if faceName != "" {
+		return faceName
 	}
-	return
+	return strings.ToLower(strings.Split(name, " // ")[0])
 }
 
 func GetColor(colors []string) string {

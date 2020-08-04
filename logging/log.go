@@ -30,6 +30,10 @@ const (
 	FATAL
 )
 
+func GetLogger() *log.Logger {
+	return logger
+}
+
 // Setup initialize the log instance
 func Setup() {
 	var err error

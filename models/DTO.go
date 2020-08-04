@@ -38,7 +38,7 @@ type ChaosRequest struct {
 type CubeDraftRequest struct {
 	Cubelist       []string `json:"list"`
 	Players        uint     `json:"players`
-	PlayerPackSize uint     `json:"player_pack_size"`
+	PlayerPackSize uint     `json:"playerPackSize"`
 	Packs          uint     `json:"packs"`
 }
 

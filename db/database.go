@@ -5,9 +5,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"mtgpoolservice/logging"
 	"mtgpoolservice/models"
 	"mtgpoolservice/models/entities"
 	"mtgpoolservice/setting"
+	"strings"
 )
 
 type Database struct {
@@ -29,12 +31,12 @@ func Init() *gorm.DB {
 		fmt.Println("entities err: ", err)
 	}
 
-	db.DB().SetMaxIdleConns(10)
+	db.DB().SetMaxIdleConns(100)
 	db.LogMode(setting.DatabaseSetting.Log)
+	db.SetLogger(logging.GetLogger())
 
 	db.AutoMigrate(&entities.Set{})
 	db.AutoMigrate(&entities.Card{})
-	db.AutoMigrate(&entities.Color{})
 	db.AutoMigrate(&entities.Sheet{})
 	db.AutoMigrate(&entities.SheetCard{})
 	db.AutoMigrate(&entities.Version{})
@@ -69,19 +71,27 @@ func FetchLastVersion() (*entities.Version, error) {
 }
 
 func GetCardsByName(names []string) (cr []models.CardResponse, err error) {
-	for _, name := range names {
-		var card entities.Card
-		err = DB.Where("cubable = true AND name ILIKE ?", fmt.Sprint(name, "%s")).Set("gorm:auto_preload", true).First(&card).Error
-		if err != nil {
-			return nil, fmt.Errorf("could not find card with name like %s", name)
-		}
+	faceNames := GetFaceNames(names[:])
+	cards := make([]entities.Card, 0)
+	err = DB.Where("cubable = true AND face_name in (?)", faceNames).Find(&cards).Error
+	if err != nil {
+		return nil, fmt.Errorf("could not find cards with names %s", faceNames)
+	}
+	for i, _ := range cards {
 		cardResponse := models.CardResponse{
-			Card: &card,
+			Card: &cards[i],
 			Id:   uuid.New().String(),
 			Foil: false,
 		}
 		cr = append(cr, cardResponse)
 	}
+	return
+}
 
+func GetFaceNames(names []string) (faceNames []string) {
+	for _, name := range names {
+		facename := strings.ToLower(strings.Split(name, " // ")[0])
+		faceNames = append(faceNames, facename)
+	}
 	return
 }

@@ -8,24 +8,20 @@ import (
 )
 
 func CubePacks(c *gin.Context) {
-	var request models.CubeSealedRequest
+	var request models.CubeDraftRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	ret := make([]models.Pool, request.Players)
+	ret := make([]models.Pool, 0)
 	for p := 0; p < int(request.Players); p++ {
-		pa := make(models.Pool, 0)
 		packs, err := services.MakeCubePacks(request)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		for _, pack := range packs {
-			pa = append(pa, pack...)
-		}
-		ret[p] = pa
+		ret = append(ret, packs...)
 	}
 	c.JSON(http.StatusOK, ret)
 }
