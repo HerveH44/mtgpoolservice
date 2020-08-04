@@ -7,30 +7,32 @@ import (
 	"log"
 	database "mtgpoolservice/db"
 	"mtgpoolservice/models"
+	"mtgpoolservice/models/entities"
 	"mtgpoolservice/models/mtgjson"
 	"net/http"
 	"sort"
 )
 
+var playableSetTypes = []string{"core", "expansion", "draft_innovation", "funny", "starter", "masters"}
+
 func AvailableSets(context *gin.Context) {
 	sets, err := database.GetSets()
-
 	if err != nil {
 		context.JSON(500, gin.H{"error": "unexpected error"})
 		return
 	}
 
-	setMap := make(map[string][]models.SetResponse)
-	playableSetTypes := []string{"core", "expansion", "draft_innovation", "funny", "starter", "masters"}
-	for _, t := range playableSetTypes {
-		setMap[t] = make([]models.SetResponse, 0)
-	}
-	sort.Strings(playableSetTypes)
+	setMap := buildAvailableSetsMap(sets[:])
+	context.JSON(http.StatusOK, setMap)
+}
+
+func buildAvailableSetsMap(sets []entities.Set) map[string][]models.SetResponse {
+	setMap := setupSetsMap()
+
 	for _, set := range sets {
 		setType := set.Type
 		i := sort.SearchStrings(playableSetTypes, setType)
 		if i >= len(playableSetTypes) || playableSetTypes[i] != setType {
-			fmt.Println("Found a bad Set!", set.Name, set.Type)
 			continue
 		}
 		setMap[setType] = append(setMap[setType], models.SetResponse{
@@ -38,13 +40,23 @@ func AvailableSets(context *gin.Context) {
 			Name: set.Name,
 		})
 	}
+	return setMap
+}
+
+func setupSetsMap() map[string][]models.SetResponse {
+	setMap := make(map[string][]models.SetResponse)
+	for _, t := range playableSetTypes {
+		setMap[t] = make([]models.SetResponse, 0)
+	}
+
 	setMap["random"] = make([]models.SetResponse, 0)
 	setMap["random"] = append(setMap["random"], models.SetResponse{
 		Code: "RNG",
 		Name: "Random Set",
 	})
+	sort.Strings(playableSetTypes)
 
-	context.JSON(http.StatusOK, setMap)
+	return setMap
 }
 
 func RefreshSetsInDB(context *gin.Context) {
