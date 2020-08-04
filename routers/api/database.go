@@ -11,6 +11,8 @@ import (
 	"mtgpoolservice/models/mtgjson"
 	"net/http"
 	"sort"
+	"strings"
+	"time"
 )
 
 var playableSetTypes = []string{"core", "expansion", "draft_innovation", "funny", "starter", "masters"}
@@ -84,10 +86,12 @@ func UpdateSets() error {
 	log.Println("sets found", setsNumber)
 
 	i := 0
+	ordereredSetsCode := orderSetsByDate(&allPrintings.Data)
+	isCubable := buildIsCubableFunc(ordereredSetsCode)
 	for setName, set := range allPrintings.Data {
 		i++
 		fmt.Printf("%d/%d - saving set %s\n", i, setsNumber, setName)
-		entity := mtgjson.MapMTGJsonSetToEntity(set)
+		entity := mtgjson.MapMTGJsonSetToEntity(set, isCubable)
 		if err := database.GetDB().Save(&entity).Error; err != nil {
 			fmt.Printf("could not save the card %s - %s\n", setName, err)
 			return err
@@ -96,11 +100,56 @@ func UpdateSets() error {
 	return nil
 }
 
+func buildIsCubableFunc(orderedSetCodes map[string]int) func(string, []string) bool {
+	return func(setCode string, printings []string) bool {
+		if len(printings) < 2 {
+			return true
+		}
+
+		sort.SliceStable(printings, func(i, j int) bool {
+			setCode1 := printings[i]
+			setCode2 := printings[j]
+			return orderedSetCodes[setCode1] < orderedSetCodes[setCode2]
+		})
+
+		if setCode == printings[0] {
+			return true
+		}
+
+		return false
+	}
+}
+
+func orderSetsByDate(m *map[string]mtgjson.MTGJsonSet) map[string]int {
+	r := make([]string, 0)
+	for setCode, set := range *m {
+		if set.Type != "masterpiece" {
+			r = append(r, setCode)
+		}
+	}
+	myMap := *m
+	sort.SliceStable(r, func(i, j int) bool {
+		releaseDate1 := myMap[r[i]].ReleaseDate
+		releaseDate2 := myMap[r[j]].ReleaseDate
+		return time.Time(releaseDate1).After(time.Time(releaseDate2))
+	})
+
+	ret := make(map[string]int)
+	for i, code := range r {
+		ret[code] = i
+	}
+	return ret
+}
+
 func RefreshSet(context *gin.Context) {
-	log.Println("RefreshSetsInDB data")
-	resp, err := http.Get("http://mtgjson.com/api/v5/ISD.json")
+	setCode := context.Param("setCode")
+	if setCode == "" {
+		context.JSON(500, "unexpected error: Could not fetch the MTGJson monoSet")
+	}
+	log.Println("RefreshSet data")
+	resp, err := http.Get(fmt.Sprint("http://mtgjson.com/api/v5/", strings.ToUpper(setCode), ".json"))
 	if err != nil {
-		log.Println("Could not fetch the MTGJson monoSet")
+		log.Println("RefreshSet: Could not fetch the MTGJson set with code", setCode)
 		context.JSON(500, "unexpected error: Could not fetch the MTGJson monoSet")
 		return
 	}
@@ -113,7 +162,7 @@ func RefreshSet(context *gin.Context) {
 	}
 
 	log.Println("main: saving set ", monoSet.Data.Name)
-	entity := mtgjson.MapMTGJsonSetToEntity(monoSet.Data)
+	entity := mtgjson.MapMTGJsonSetToEntity(monoSet.Data, nil)
 	if err := database.GetDB().Save(&entity).Error; err != nil {
 		log.Fatal("main: could not save the set", monoSet.Data.Name, err)
 

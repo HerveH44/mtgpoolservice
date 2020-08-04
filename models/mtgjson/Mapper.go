@@ -6,21 +6,24 @@ import (
 	"github.com/jinzhu/gorm/dialects/postgres"
 	"mtgpoolservice/models/entities"
 	"strings"
+	"time"
 )
 
-func MapMTGJsonSetToEntity(mtgJsonSet MTGJsonSet) entities.Set {
+func MapMTGJsonSetToEntity(mtgJsonSet MTGJsonSet, isCubable func(string, []string) bool) entities.Set {
 	s := entities.Set{
 		Code:               mtgJsonSet.Code,
 		Name:               mtgJsonSet.Name,
 		Type:               mtgJsonSet.Type,
-		ReleaseDate:        mtgJsonSet.ReleaseDate,
+		ReleaseDate:        time.Time(mtgJsonSet.ReleaseDate),
 		BaseSetSize:        mtgJsonSet.BaseSetSize,
-		Cards:              MakeCards(mtgJsonSet.Code, mtgJsonSet.Cards),
+		Cards:              MakeCards(mtgJsonSet.Code, mtgJsonSet.Cards, isCubable),
 		Sheets:             MakeSheets(mtgJsonSet.Code, mtgJsonSet.Booster.Default.Sheets),
 		PackConfigurations: MakePackConfigurations(mtgJsonSet.Booster.Default.Boosters),
 	}
 	return s
 }
+
+//func isCubable()
 
 func MakePackConfigurations(configurations []PackConfiguration) postgres.Jsonb {
 	jsonContent, _ := json.Marshal(configurations)
@@ -55,7 +58,7 @@ func MakeSheetCards(sheetId string, cards SheetCards) (ret []entities.SheetCard)
 	return
 }
 
-func MakeCards(code string, cards []Card) (ret []entities.Card) {
+func MakeCards(code string, cards []Card, isCubable func(string, []string) bool) (ret []entities.Card) {
 	for _, card := range cards {
 		mappedCard := entities.Card{
 			SetID:             code,
@@ -76,6 +79,7 @@ func MakeCards(code string, cards []Card) (ret []entities.Card) {
 			Colors:            MakeColors(card.Colors),
 			ScryfallID:        card.Identifiers.ScryfallID,
 			URL:               fmt.Sprintf("https://api.scryfall.com/cards/%s?format=image", card.Identifiers.ScryfallID),
+			Cubable:           isCubable(code, card.Printings),
 		}
 
 		ret = append(ret, mappedCard)

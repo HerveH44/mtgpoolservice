@@ -71,9 +71,9 @@ func FetchLastVersion() (*entities.Version, error) {
 func GetCardsByName(names []string) (cr []models.CardResponse, err error) {
 	for _, name := range names {
 		var card entities.Card
-		err = DB.Where("name ILIKE ?", name).Set("gorm:auto_preload", true).First(&card).Error
+		err = DB.Where("cubable = true AND name ILIKE ?", fmt.Sprint(name, "%s")).Set("gorm:auto_preload", true).First(&card).Error
 		if err != nil {
-			return nil, fmt.Errorf("could not find cardResponse with name %s", name)
+			return nil, fmt.Errorf("could not find card with name like %s", name)
 		}
 		cardResponse := models.CardResponse{
 			Card: &card,

@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm/dialects/postgres"
 	"mtgpoolservice/utils"
+	"time"
 )
 
 type Set struct {
 	Code               string `gorm:"primary_key"`
 	Name               string
 	Type               string
-	ReleaseDate        string
+	ReleaseDate        time.Time `gorm:"Type:date"`
 	BaseSetSize        int
 	Cards              []Card  `gorm:"foreignkey:SetID;PRELOAD:true"`
 	Sheets             []Sheet `gorm:"foreignkey:SetID;PRELOAD:true"`

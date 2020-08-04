@@ -53,13 +53,13 @@ type MonoSet struct {
 }
 
 type MTGJsonSet struct {
-	Code         string `json:"code"`
-	Name         string `json:"name"`
-	Type         string `json:"type"`
-	Block        string `json:"block"`
-	ReleaseDate  string `json:"releaseDate"`
-	BaseSetSize  int    `json:"baseSetSize"`
-	TotalSetSize int    `json:"totalSetSize"`
+	Code         string      `json:"code"`
+	Name         string      `json:"name"`
+	Type         string      `json:"type"`
+	Block        string      `json:"block"`
+	ReleaseDate  VersionDate `json:"releaseDate"`
+	BaseSetSize  int         `json:"baseSetSize"`
+	TotalSetSize int         `json:"totalSetSize"`
 	Booster      struct {
 		Default BoosterRule `json:"default"` // on ne veut que le booster de défaut
 	} `json:"booster"`

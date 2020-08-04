@@ -5,8 +5,8 @@ type Color struct {
 }
 
 type Card struct {
+	UUID              string  `json:"uuid" gorm:"primary_key"`
 	SetID             string  `json:"setCode"`
-	UUID              string  `json:"uuid"`
 	Name              string  `json:"name"`
 	Number            string  `json:"number"`
 	Layout            string  `json:"layout"`
@@ -23,5 +23,6 @@ type Card struct {
 	Colors            []Color `json:"colors" gorm:"many2many:card_colors;PRELOAD:true"`
 	ScryfallID        string  `json:"scryfallId"`
 	URL               string  `json:"url"`
+	Cubable           bool    `json:"-"`
 	//Names             []string  `gorm:"many2many:card_names;PRELOAD:true"`
 }
