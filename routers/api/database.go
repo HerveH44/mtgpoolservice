@@ -139,8 +139,7 @@ var notCubableSetTypes = []string{"box", "duel_deck", "masterpiece", "memorabili
 func orderSetsByDate(m *map[string]mtgjson.MTGJsonSet) map[string]int {
 	r := make([]string, 0)
 	for setCode, set := range *m {
-		index := sort.SearchStrings(notCubableSetTypes, set.Type)
-		if index >= len(notCubableSetTypes) || notCubableSetTypes[index] != set.Type {
+		if !utils.Include(notCubableSetTypes, set.Type) {
 			r = append(r, setCode)
 		}
 	}
