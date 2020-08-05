@@ -8,22 +8,23 @@ import (
 )
 
 func CubePacks(c *gin.Context) {
-	var request models.CubeDraftRequest
-	if err := c.ShouldBindJSON(&request); err != nil {
+	var req models.CubeDraftRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	ret := make([]models.Pool, 0)
-	for p := 0; p < int(request.Players); p++ {
-		packs, err := services.MakeCubePacks(request)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-		ret = append(ret, packs...)
+	if int(req.PlayerPackSize)*int(req.Players)*int(req.Packs) > len(req.Cubelist) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cube list is too small"})
+		return
 	}
-	c.JSON(http.StatusOK, ret)
+
+	packs, err := services.MakeCubePacks(&req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, packs)
 }
 
 func CubeList(c *gin.Context) {
@@ -35,7 +36,7 @@ func CubeList(c *gin.Context) {
 
 	errs := services.CheckCubeList(request)
 	if len(errs) > 0 {
-		c.JSON(http.StatusBadRequest, errs)
+		c.JSON(http.StatusBadRequest, gin.H{"error": errs})
 	} else {
 		c.Status(200)
 	}

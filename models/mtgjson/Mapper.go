@@ -99,7 +99,7 @@ func MakeFaceName(faceName string, name string) string {
 
 func GetColor(colors []string) string {
 	if len(colors) == 0 {
-		return "colorless"
+		return "Colorless"
 	}
 	switch len(colors) {
 	case 0:

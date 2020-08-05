@@ -6,12 +6,11 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"log"
-	"mtgpoolservice/logging"
 	"mtgpoolservice/models"
 	"mtgpoolservice/models/entities"
 	"mtgpoolservice/setting"
-	"sort"
 	"strings"
+	"sync"
 )
 
 type Database struct {
@@ -33,9 +32,9 @@ func Init() *gorm.DB {
 		fmt.Println("entities err: ", err)
 	}
 
-	db.DB().SetMaxIdleConns(100)
-	db.LogMode(setting.DatabaseSetting.Log)
-	db.SetLogger(logging.GetLogger())
+	db.DB().SetMaxIdleConns(10)
+	//db.LogMode(setting.DatabaseSetting.Log)
+	//db.SetLogger(logging.GetLogger())
 
 	db.AutoMigrate(&entities.Set{})
 	db.AutoMigrate(&entities.Card{})
@@ -73,42 +72,56 @@ func FetchLastVersion() (*entities.Version, error) {
 }
 
 func CheckCubeCards(names []string) (missingCardNames []string) {
-	rows, err := DB.Raw("SELECT DISTINCT face_name FROM cards WHERE cubable = true ORDER BY face_name ASC").Rows()
-	if err != nil {
-		log.Println(err)
+	faceNames := GetFaceNames(names[:])
+
+	jobs := make(chan string, len(faceNames))
+	missingCards := make(chan string)
+	var wg sync.WaitGroup
+
+	for w := 1; w <= 10; w++ {
+		wg.Add(1)
+		go worker(jobs, missingCards, &wg)
 	}
-	defer rows.Close()
-	name := ""
-	result := make([]string, 0)
-	for rows.Next() {
-		rows.Scan(&name)
-		result = append(result, name)
+	go pushToMissingCards(missingCards, &missingCardNames, &wg)
+
+	for _, name := range faceNames {
+		jobs <- name
 	}
-	for _, name := range names {
-		faceName := strings.ToLower(strings.Split(name, " // ")[0])
-		if !include(result[:], faceName) {
-			missingCardNames = append(missingCardNames, name)
-		}
-	}
+	close(jobs)
+	wg.Wait()
 	return
 }
 
-func include(arr []string, val string) bool {
-	sort.Strings(arr)
-	i := sort.SearchStrings(arr, val)
-	if i >= len(arr) || arr[i] != val {
-		return false
+func pushToMissingCards(missingCards <-chan string, missingCardNames *[]string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for c := range missingCards {
+		*missingCardNames = append(*missingCardNames, c)
 	}
-	return true
 }
 
-func GetCardsByName(names []string) (cr []models.CardResponse, err error) {
+func worker(jobs <-chan string, missingCard chan<- string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for j := range jobs {
+		_, err := GetCardByFacename(j)
+		if err != nil {
+			missingCard <- j
+		}
+	}
+}
+
+func GetCardsByName(names []string) (cr []models.CardResponse, missingCards []string) {
 	faceNames := GetFaceNames(names[:])
 	cards := make([]entities.Card, 0)
-	err = DB.Where("cubable = true AND face_name in (?)", faceNames).Find(&cards).Error
-	if err != nil {
-		return nil, fmt.Errorf("could not find cards with names %s", faceNames)
+	for _, name := range faceNames {
+		card, err := GetCardByFacename(name)
+		if err != nil {
+			log.Println("could not find card with face_name", name)
+			missingCards = append(missingCards, name)
+		} else {
+			cards = append(cards, card)
+		}
 	}
+
 	for i, _ := range cards {
 		cardResponse := models.CardResponse{
 			Card: &cards[i],
@@ -116,6 +129,14 @@ func GetCardsByName(names []string) (cr []models.CardResponse, err error) {
 			Foil: false,
 		}
 		cr = append(cr, cardResponse)
+	}
+	return
+}
+
+func GetCardByFacename(name string) (card entities.Card, err error) {
+	err = DB.Where("cubable = true AND face_name = ?", name).First(&card).Error
+	if err != nil {
+		log.Println("could not find card with face_name", name)
 	}
 	return
 }

@@ -43,29 +43,17 @@ func Shuffle(a []models.CardResponse) {
 	rand.Shuffle(len(a), func(i, j int) { a[i], a[j] = a[j], a[i] })
 }
 
-func CheckCubeList(req models.CubeListRequest) (invalidCards []string) {
-	invalidCards = db.CheckCubeCards(req.Cubelist[:])
-	return
+func CheckCubeList(req models.CubeListRequest) []string {
+	return db.CheckCubeCards(req.Cubelist[:])
 }
 
-func MakeCubePacks(req models.CubeDraftRequest) (packs []models.Pool, err error) {
-	if int(req.PlayerPackSize)*int(req.Players)*int(req.Packs) > len(req.Cubelist) {
-		return nil, fmt.Errorf("MakeCubePacks: cube list too small")
-	}
-
-	cubeCards, err := db.GetCardsByName(req.Cubelist)
-	if len(cubeCards) != len(req.Cubelist) {
-		missingCards := GetMissingCards(req.Cubelist[:], cubeCards[:])
-		fmt.Println("MakeCubePacks: could not find all the cards. Expected ", len(req.Cubelist), " cards but found ", len(cubeCards), "cards instead")
-		fmt.Println(missingCards)
+func MakeCubePacks(req *models.CubeDraftRequest) (packs []models.Pool, err error) {
+	cubeCards, missingCards := db.GetCardsByName(req.Cubelist)
+	if len(missingCards) > 0 {
+		return nil, fmt.Errorf("unknown cards", missingCards)
 	}
 
 	Shuffle(cubeCards[:])
-	if err != nil {
-		fmt.Println(err)
-		logging.Warn(err)
-		return nil, fmt.Errorf("MakeCubePacks: could not produce pack")
-	}
 	for i := 0; i < int(req.Players)*int(req.Packs); i++ {
 		sliceLowerBound := i * int(req.PlayerPackSize)
 		sliceUpperBound := sliceLowerBound + int(req.PlayerPackSize)
