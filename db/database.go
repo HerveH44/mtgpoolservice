@@ -50,7 +50,7 @@ func GetDB() *gorm.DB {
 	return DB
 }
 
-func GetSets() ([]entities.Set, error) {
+func getSets() ([]entities.Set, error) {
 	s := make([]entities.Set, 0)
 	if err := DB.Order("release_date DESC").Find(&s).Error; err != nil {
 		return nil, err
@@ -59,7 +59,6 @@ func GetSets() ([]entities.Set, error) {
 }
 
 func fetchSet(setCode string) (*entities.Set, error) {
-	fmt.Printf("fetching set %s\n", setCode)
 	var s entities.Set
 	err := DB.Where(" code = ?", setCode).Set("gorm:auto_preload", true).First(&s).Error
 	return &s, err

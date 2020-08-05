@@ -69,3 +69,5 @@ type CubeSealedRequest struct {
 	Players        uint     `json:"players`
 	PlayerPoolSize uint     `json:"player_pool_size"`
 }
+
+type AvailableSetsMap map[string][]SetResponse

@@ -12,8 +12,8 @@ func InitRouter() *gin.Engine {
 	r.GET("/about", api.Version)
 
 	//Update DB
-	r.GET("/refresh", api.RefreshSetsInDB)
-	r.GET("/refresh/:setCode", api.RefreshSet)
+	r.GET("/import", api.ImportAllSets)
+	r.GET("/import/:setCode", api.ImportSet)
 
 	r.GET("/sets", api.AvailableSets)
 	r.POST("/regular", api.RegularPacks)

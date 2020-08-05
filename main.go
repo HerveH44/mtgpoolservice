@@ -11,7 +11,7 @@ import (
 	"mtgpoolservice/models/entities"
 	"mtgpoolservice/models/mtgjson"
 	"mtgpoolservice/routers"
-	"mtgpoolservice/routers/api"
+	"mtgpoolservice/services"
 	"mtgpoolservice/setting"
 	"net/http"
 	"time"
@@ -81,7 +81,7 @@ func CheckAndUpdateSets() {
 		/**
 		Update the DB
 		*/
-		err := api.UpdateSets()
+		err := services.UpdateSets()
 		if err != nil {
 			fmt.Print("main.CheckAndUpdateSets() - ERROR: %w", err)
 		}

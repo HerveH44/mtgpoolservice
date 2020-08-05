@@ -28,7 +28,7 @@ func TestGetSet(t *testing.T) {
 
 func TestGetSets(t *testing.T) {
 	Init()
-	sets, err := GetSets()
+	sets, err := getSets()
 
 	if err != nil {
 		t.Error(err)
