@@ -124,3 +124,42 @@ func UpdateSet(setCode string) error {
 func notCubableFunc(string, *mtgjson.Card) bool {
 	return false
 }
+
+func CheckAndUpdateSets() {
+	log.Println("Check MTGJSON remote version")
+	version := mtgjson.Version{}
+
+	resp, err := http.Get(mtgJsonEndpoint + "Meta.json")
+	if err != nil {
+		log.Println("Could not fetch the MTGJson version")
+		return
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(&version); err != nil {
+		log.Println("error while unmarshalling version", err)
+		return
+	}
+
+	log.Println(version)
+	entity := mtgjson.MapMTGJsonVersionToVersion(version)
+	lastVersion, err := database.FetchLastVersion()
+	if err != nil {
+		fmt.Print("Could not fetch last version", err)
+		return
+	}
+	if entity.IsNewer(lastVersion) {
+		if err := database.GetDB().Save(&entity).Error; err != nil {
+			fmt.Printf("could not save the version %w\n", err)
+			return
+		}
+
+		/**
+		Update the DB
+		*/
+		err := UpdateSets()
+		if err != nil {
+			fmt.Print("main.CheckAndUpdateSets() - ERROR: %w", err)
+		}
+	}
+}

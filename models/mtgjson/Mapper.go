@@ -9,6 +9,15 @@ import (
 	"time"
 )
 
+func MapMTGJsonVersionToVersion(version Version) entities.Version {
+	date := time.Time(version.Data.Date)
+	v := entities.Version{
+		Date:            date,
+		SemanticVersion: version.Data.Version,
+	}
+	return v
+}
+
 func MapMTGJsonSetToEntity(mtgJsonSet MTGJsonSet, isCubable func(string, *Card) bool) entities.Set {
 	s := entities.Set{
 		Code:               mtgJsonSet.Code,
