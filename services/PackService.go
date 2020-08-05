@@ -9,8 +9,6 @@ import (
 	"mtgpoolservice/logging"
 	"mtgpoolservice/models"
 	"mtgpoolservice/models/entities"
-	"sort"
-	"strings"
 	"time"
 )
 
@@ -60,18 +58,6 @@ func MakeCubePacks(req *models.CubeDraftRequest) (packs []models.Pool, err error
 		slicedList := cubeCards[sliceLowerBound:sliceUpperBound]
 
 		packs = append(packs, slicedList)
-	}
-	return
-}
-
-func GetMissingCards(cubeList []string, fetchedCards []models.CardResponse) (ret []string) {
-	sort.Strings(cubeList)
-
-	for _, card := range fetchedCards {
-		index := sort.SearchStrings(cubeList, strings.ToLower(card.Name))
-		if index >= len(cubeList) || cubeList[index] != strings.ToLower(card.Name) {
-			ret = append(ret, card.Name)
-		}
 	}
 	return
 }
