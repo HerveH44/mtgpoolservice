@@ -119,7 +119,7 @@ func GetCardsByName(names []string) (cr models.CardPool, missingCardNames []stri
 	return
 }
 
-func GetCardWithName(name string) (card entities.Card, err error) {
+func getCardWithName(name string) (card entities.Card, err error) {
 	if isMultiCard := strings.ContainsAny(name, "/"); isMultiCard {
 		err = DB.Where("cubable = true AND name ILIKE ?", name).First(&card).Error
 	} else {
