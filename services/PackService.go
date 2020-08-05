@@ -35,7 +35,8 @@ func MakePacks(sets []string) (packs []models.CardPool, err error) {
 }
 
 func CheckCubeList(req models.CubeListRequest) []string {
-	return db.CheckCubeCards(req.Cubelist[:])
+	_, missingCardNames := db.GetCardsByName(req.Cubelist[:])
+	return missingCardNames
 }
 
 func MakeCubePacks(req *models.CubeDraftRequest) (packs []models.CardPool, err error) {

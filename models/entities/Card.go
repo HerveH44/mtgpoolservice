@@ -18,6 +18,6 @@ type Card struct {
 	Color             string `json:"color"`
 	ScryfallID        string `json:"scryfallId"`
 	URL               string `json:"url"`
-	Cubable           bool   `json:"-" gorm:"index:cube"`
-	FaceName          string `json:"-" gorm:"index:cube"`
+	Cubable           bool   `json:"-" gorm:"index:cubable_idx"`
+	FaceName          string `json:"-" gorm:"index:cubable_idx"`
 }

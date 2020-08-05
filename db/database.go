@@ -5,6 +5,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"log"
+	"mtgpoolservice/logging"
 	"mtgpoolservice/models"
 	"mtgpoolservice/models/entities"
 	"mtgpoolservice/setting"
@@ -32,8 +33,8 @@ func Init() *gorm.DB {
 	}
 
 	db.DB().SetMaxIdleConns(10)
-	//db.LogMode(setting.DatabaseSetting.Log)
-	//db.SetLogger(logging.GetLogger())
+	db.LogMode(setting.DatabaseSetting.Log)
+	db.SetLogger(logging.GetLogger())
 
 	db.AutoMigrate(&entities.Set{})
 	db.AutoMigrate(&entities.Card{})
@@ -70,55 +71,24 @@ func FetchLastVersion() (*entities.Version, error) {
 	return &v, err
 }
 
-func CheckCubeCards(names []string) (missingCardNames []string) {
-	faceNames := GetFaceNames(names[:])
-
-	jobs := make(chan string, len(faceNames))
-	missingCards := make(chan string)
-	var wg sync.WaitGroup
-
-	for w := 1; w <= 10; w++ {
-		wg.Add(1)
-		go worker(jobs, missingCards, &wg)
-	}
-	go pushToMissingCards(missingCards, &missingCardNames, &wg)
-
-	for _, name := range faceNames {
-		jobs <- name
-	}
-	close(jobs)
-	wg.Wait()
-	return
-}
-
-func pushToCardPool(cards chan entities.Card, cr *models.CardPool, wg *sync.WaitGroup) {
+func addToCardPool(cards chan entities.Card, cr *models.CardPool, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for c := range cards {
 		cr.Add(&c, false)
 	}
 }
 
-func pushToMissingCards(missingCards <-chan string, missingCardNames *[]string, wg *sync.WaitGroup) {
+func addToMissingCards(missingCards <-chan string, missingCardNames *[]string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for c := range missingCards {
 		*missingCardNames = append(*missingCardNames, c)
 	}
 }
 
-func worker(jobs <-chan string, missingCard chan<- string, wg *sync.WaitGroup) {
+func getCard(jobs <-chan string, missingCards chan<- string, foundCards chan<- entities.Card, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for j := range jobs {
-		_, err := GetCardByFacename(j)
-		if err != nil {
-			missingCard <- j
-		}
-	}
-}
-
-func worker2(jobs <-chan string, missingCards chan<- string, foundCards chan<- entities.Card, wg *sync.WaitGroup) {
-	defer wg.Done()
-	for j := range jobs {
-		c, err := GetCardByFacename(j)
+		c, err := GetCardWithName(j)
 		if err != nil {
 			missingCards <- j
 		} else {
@@ -128,40 +98,36 @@ func worker2(jobs <-chan string, missingCards chan<- string, foundCards chan<- e
 }
 
 func GetCardsByName(names []string) (cr models.CardPool, missingCardNames []string) {
-	faceNames := GetFaceNames(names[:])
-
-	jobs := make(chan string, len(faceNames))
+	jobs := make(chan string, len(names))
 	missingCards := make(chan string)
 	cards := make(chan entities.Card)
 	var wg sync.WaitGroup
 
 	for w := 1; w <= 10; w++ {
 		wg.Add(1)
-		go worker2(jobs, missingCards, cards, &wg)
+		go getCard(jobs, missingCards, cards, &wg)
 	}
-	go pushToMissingCards(missingCards, &missingCardNames, &wg)
-	go pushToCardPool(cards, &cr, &wg)
 
-	for _, name := range faceNames {
+	go addToMissingCards(missingCards, &missingCardNames, &wg)
+	go addToCardPool(cards, &cr, &wg)
+
+	for _, name := range names {
 		jobs <- name
 	}
+
 	close(jobs)
 	wg.Wait()
 	return
 }
 
-func GetCardByFacename(name string) (card entities.Card, err error) {
-	err = DB.Where("cubable = true AND face_name = ?", name).First(&card).Error
-	if err != nil {
-		log.Println("could not find card with face_name", name)
+func GetCardWithName(name string) (card entities.Card, err error) {
+	if isMultiCard := strings.ContainsAny(name, "/"); isMultiCard {
+		err = DB.Where("cubable = true AND name ILIKE ?", name).First(&card).Error
+	} else {
+		err = DB.Where("cubable = true AND face_name = ?", name).First(&card).Error
 	}
-	return
-}
-
-func GetFaceNames(names []string) (faceNames []string) {
-	for _, name := range names {
-		facename := strings.ToLower(strings.Split(name, " // ")[0])
-		faceNames = append(faceNames, facename)
+	if err != nil {
+		log.Println("could not find card with name", name)
 	}
 	return
 }

@@ -94,6 +94,10 @@ func MakeFaceName(faceName string, name string) string {
 	if faceName != "" {
 		return strings.ToLower(faceName)
 	}
+	return NameToFaceName(name)
+}
+
+func NameToFaceName(name string) string {
 	return strings.ToLower(strings.Split(name, " // ")[0])
 }
 
