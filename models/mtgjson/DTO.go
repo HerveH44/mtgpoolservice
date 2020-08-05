@@ -99,6 +99,7 @@ type Card struct {
 	OtherFaceIds  []string      `json:"otherFaceIds,omitempty"`
 	Side          string        `json:"side,omitempty"`
 	Variations    []string      `json:"variations,omitempty"`
-	IsPromo       bool          `json:"IsPromo"`
+	IsPromo       bool          `json:"isPromo"`
 	IsStarter     bool          `json:"isStarter"`
+	BorderColor   string        `json:"borderColor"`
 }

@@ -9,6 +9,7 @@ import (
 	"mtgpoolservice/models"
 	"mtgpoolservice/models/entities"
 	"mtgpoolservice/models/mtgjson"
+	"mtgpoolservice/utils"
 	"net/http"
 	"sort"
 	"strings"
@@ -101,8 +102,12 @@ func UpdateSets() error {
 	return nil
 }
 
-func buildIsCubableFunc(orderedSetCodes map[string]int) func(string, []string) bool {
-	return func(setCode string, printings []string) bool {
+func buildIsCubableFunc(orderedSetCodes map[string]int) func(string, *mtgjson.Card) bool {
+	return func(setCode string, card *mtgjson.Card) bool {
+		if len(card.Variations) > 0 && (card.BorderColor == "borderless" || card.IsStarter || utils.Include(card.FrameEffects, "extendedart")) {
+			return false
+		}
+		printings := card.Printings
 		if len(printings) < 2 {
 			return true
 		}
@@ -129,7 +134,7 @@ func buildIsCubableFunc(orderedSetCodes map[string]int) func(string, []string) b
 	}
 }
 
-var notCubableSetTypes = []string{"box", "masterpiece", "memorabilia", "promo", "spellbook"}
+var notCubableSetTypes = []string{"box", "duel_deck", "masterpiece", "memorabilia", "promo", "spellbook"}
 
 func orderSetsByDate(m *map[string]mtgjson.MTGJsonSet) map[string]int {
 	r := make([]string, 0)
@@ -174,7 +179,7 @@ func RefreshSet(context *gin.Context) {
 	}
 
 	log.Println("main: saving set ", monoSet.Data.Name)
-	entity := mtgjson.MapMTGJsonSetToEntity(monoSet.Data, func(s string, i []string) bool {
+	entity := mtgjson.MapMTGJsonSetToEntity(monoSet.Data, func(s string, i *mtgjson.Card) bool {
 		return false
 	})
 	if err := database.GetDB().Save(&entity).Error; err != nil {

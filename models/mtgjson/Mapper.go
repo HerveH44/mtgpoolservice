@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func MapMTGJsonSetToEntity(mtgJsonSet MTGJsonSet, isCubable func(string, []string) bool) entities.Set {
+func MapMTGJsonSetToEntity(mtgJsonSet MTGJsonSet, isCubable func(string, *Card) bool) entities.Set {
 	s := entities.Set{
 		Code:               mtgJsonSet.Code,
 		Name:               mtgJsonSet.Name,
@@ -56,7 +56,7 @@ func MakeSheetCards(sheetId string, cards SheetCards) (ret []entities.SheetCard)
 	return
 }
 
-func MakeCards(code string, cards []Card, isCubable func(string, []string) bool) (ret []entities.Card) {
+func MakeCards(code string, cards []Card, isCubable func(string, *Card) bool) (ret []entities.Card) {
 	for _, card := range cards {
 		if card.IsPromo || card.IsAlternative {
 			continue
@@ -80,7 +80,7 @@ func MakeCards(code string, cards []Card, isCubable func(string, []string) bool)
 			Color:             GetColor(card.Colors),
 			ScryfallID:        card.Identifiers.ScryfallID,
 			URL:               fmt.Sprintf("https://api.scryfall.com/cards/%s?format=image", card.Identifiers.ScryfallID),
-			Cubable:           isCubable(code, card.Printings),
+			Cubable:           isCubable(code, &card),
 			FaceName:          MakeFaceName(card.FaceName, card.Name),
 		}
 
