@@ -16,7 +16,7 @@ func TestGetPack(t *testing.T) {
 		t.Error(err)
 	}
 
-	pack, err := services.MakePack(&set)
+	pack, err := services.MakeRegularPack(&set)
 
 	bytes, err := json.Marshal(pack)
 

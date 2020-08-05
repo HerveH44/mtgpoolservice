@@ -3,7 +3,6 @@ package services
 import (
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"math/rand"
 	"mtgpoolservice/db"
 	"mtgpoolservice/logging"
@@ -12,7 +11,7 @@ import (
 	"time"
 )
 
-func MakePacks(sets []string) (packs []models.Pool, err error) {
+func MakePacks(sets []string) (packs []models.CardPool, err error) {
 	for i := 0; i < len(sets); i++ {
 		setCode := sets[i]
 
@@ -23,7 +22,7 @@ func MakePacks(sets []string) (packs []models.Pool, err error) {
 			return nil, errors.New("set " + setCode + "does not exist")
 		}
 
-		pack, err := MakePack(set)
+		pack, err := MakeRegularPack(set)
 		if err != nil {
 			fmt.Println(err)
 			logging.Warn(err)
@@ -35,23 +34,17 @@ func MakePacks(sets []string) (packs []models.Pool, err error) {
 	return
 }
 
-// Shuffle shuffles the array parameter in place
-func Shuffle(a []models.CardResponse) {
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(a), func(i, j int) { a[i], a[j] = a[j], a[i] })
-}
-
 func CheckCubeList(req models.CubeListRequest) []string {
 	return db.CheckCubeCards(req.Cubelist[:])
 }
 
-func MakeCubePacks(req *models.CubeDraftRequest) (packs []models.Pool, err error) {
+func MakeCubePacks(req *models.CubeDraftRequest) (packs []models.CardPool, err error) {
 	cubeCards, missingCards := db.GetCardsByName(req.Cubelist)
 	if len(missingCards) > 0 {
 		return nil, fmt.Errorf("unknown cards", missingCards)
 	}
 
-	Shuffle(cubeCards[:])
+	cubeCards.Shuffle()
 	for i := 0; i < int(req.Players)*int(req.Packs); i++ {
 		sliceLowerBound := i * int(req.PlayerPackSize)
 		sliceUpperBound := sliceLowerBound + int(req.PlayerPackSize)
@@ -62,7 +55,7 @@ func MakeCubePacks(req *models.CubeDraftRequest) (packs []models.Pool, err error
 	return
 }
 
-func MakePack(s *entities.Set) (models.Pool, error) {
+func MakeRegularPack(s *entities.Set) (models.CardPool, error) {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	configuration, err := s.GetRandomConfiguration()
@@ -89,17 +82,14 @@ func MakePack(s *entities.Set) (models.Pool, error) {
 	return cards, nil
 }
 
-func getCards(s *entities.Set, protoCards []entities.ProtoCard) (cr []models.CardResponse, err error) {
+func getCards(s *entities.Set, protoCards []entities.ProtoCard) (cardPool models.CardPool, err error) {
 	for i, card := range protoCards {
 		c, err := s.GetCard(card.UUID)
 		if err != nil {
 			return nil, err
 		}
-		cr = append(cr, models.CardResponse{
-			Card: *c,
-			Id:   uuid.New().String(),
-			Foil: protoCards[i].Foil,
-		})
+
+		cardPool.Add(c, protoCards[i].Foil)
 	}
 	return
 }

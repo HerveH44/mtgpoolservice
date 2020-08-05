@@ -1,6 +1,11 @@
 package models
 
-import "mtgpoolservice/models/entities"
+import (
+	"github.com/google/uuid"
+	"math/rand"
+	"mtgpoolservice/models/entities"
+	"time"
+)
 
 type SetResponse struct {
 	Code string `json:"code"`
@@ -17,8 +22,6 @@ type RegularRequest struct {
 	Sets    []string `json:"sets"`
 }
 
-type RegularDraftResponse [][]Pool
-
 type CardResponse struct {
 	entities.Card
 
@@ -26,7 +29,22 @@ type CardResponse struct {
 	Foil bool   `json:"foil"`
 }
 
-type Pool []CardResponse
+type CardPool []CardResponse
+
+// Shuffle shuffles the array parameter in place
+func (c *CardPool) Shuffle() {
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(*c), func(i, j int) { (*c)[i], (*c)[j] = (*c)[j], (*c)[i] })
+}
+
+func (c *CardPool) Add(card *entities.Card, isFoil bool) {
+	cardResponse := CardResponse{
+		Card: *card,
+		Id:   uuid.New().String(),
+		Foil: isFoil,
+	}
+	*c = append(*c, cardResponse)
+}
 
 type ChaosRequest struct {
 	Players    uint `json:"players`

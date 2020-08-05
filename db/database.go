@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"log"
@@ -92,15 +91,10 @@ func CheckCubeCards(names []string) (missingCardNames []string) {
 	return
 }
 
-func pushToCardResponse(cards chan entities.Card, cr *[]models.CardResponse, wg *sync.WaitGroup) {
+func pushToCardPool(cards chan entities.Card, cr *models.CardPool, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for c := range cards {
-		cardResponse := models.CardResponse{
-			Card: c,
-			Id:   uuid.New().String(),
-			Foil: false,
-		}
-		*cr = append(*cr, cardResponse)
+		cr.Add(&c, false)
 	}
 }
 
@@ -133,7 +127,7 @@ func worker2(jobs <-chan string, missingCards chan<- string, foundCards chan<- e
 	}
 }
 
-func GetCardsByName(names []string) (cr []models.CardResponse, missingCardNames []string) {
+func GetCardsByName(names []string) (cr models.CardPool, missingCardNames []string) {
 	faceNames := GetFaceNames(names[:])
 
 	jobs := make(chan string, len(faceNames))
@@ -146,7 +140,7 @@ func GetCardsByName(names []string) (cr []models.CardResponse, missingCardNames 
 		go worker2(jobs, missingCards, cards, &wg)
 	}
 	go pushToMissingCards(missingCards, &missingCardNames, &wg)
-	go pushToCardResponse(cards, &cr, &wg)
+	go pushToCardPool(cards, &cr, &wg)
 
 	for _, name := range faceNames {
 		jobs <- name
