@@ -20,7 +20,7 @@ type RegularRequest struct {
 type RegularDraftResponse [][]Pool
 
 type CardResponse struct {
-	*entities.Card
+	entities.Card
 
 	Id   string `json:"cardId"`
 	Foil bool   `json:"foil"`

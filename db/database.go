@@ -92,6 +92,18 @@ func CheckCubeCards(names []string) (missingCardNames []string) {
 	return
 }
 
+func pushToCardResponse(cards chan entities.Card, cr *[]models.CardResponse, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for c := range cards {
+		cardResponse := models.CardResponse{
+			Card: c,
+			Id:   uuid.New().String(),
+			Foil: false,
+		}
+		*cr = append(*cr, cardResponse)
+	}
+}
+
 func pushToMissingCards(missingCards <-chan string, missingCardNames *[]string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for c := range missingCards {
@@ -109,27 +121,38 @@ func worker(jobs <-chan string, missingCard chan<- string, wg *sync.WaitGroup) {
 	}
 }
 
-func GetCardsByName(names []string) (cr []models.CardResponse, missingCards []string) {
-	faceNames := GetFaceNames(names[:])
-	cards := make([]entities.Card, 0)
-	for _, name := range faceNames {
-		card, err := GetCardByFacename(name)
+func worker2(jobs <-chan string, missingCards chan<- string, foundCards chan<- entities.Card, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for j := range jobs {
+		c, err := GetCardByFacename(j)
 		if err != nil {
-			log.Println("could not find card with face_name", name)
-			missingCards = append(missingCards, name)
+			missingCards <- j
 		} else {
-			cards = append(cards, card)
+			foundCards <- c
 		}
 	}
+}
 
-	for i, _ := range cards {
-		cardResponse := models.CardResponse{
-			Card: &cards[i],
-			Id:   uuid.New().String(),
-			Foil: false,
-		}
-		cr = append(cr, cardResponse)
+func GetCardsByName(names []string) (cr []models.CardResponse, missingCardNames []string) {
+	faceNames := GetFaceNames(names[:])
+
+	jobs := make(chan string, len(faceNames))
+	missingCards := make(chan string)
+	cards := make(chan entities.Card)
+	var wg sync.WaitGroup
+
+	for w := 1; w <= 10; w++ {
+		wg.Add(1)
+		go worker2(jobs, missingCards, cards, &wg)
 	}
+	go pushToMissingCards(missingCards, &missingCardNames, &wg)
+	go pushToCardResponse(cards, &cr, &wg)
+
+	for _, name := range faceNames {
+		jobs <- name
+	}
+	close(jobs)
+	wg.Wait()
 	return
 }
 

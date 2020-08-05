@@ -110,7 +110,7 @@ func getCards(s *entities.Set, protoCards []entities.ProtoCard) (cr []models.Car
 			return nil, err
 		}
 		cr = append(cr, models.CardResponse{
-			Card: c,
+			Card: *c,
 			Id:   uuid.New().String(),
 			Foil: protoCards[i].Foil,
 		})
