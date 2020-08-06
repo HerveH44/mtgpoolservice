@@ -19,6 +19,7 @@ func InitRouter() *gin.Engine {
 	r.POST("/regular", api.RegularPacks)
 	r.POST("/cube", api.CubePacks)
 	r.POST("/cubelist", api.CubeList)
+	r.POST("/chaos", api.ChaosPacks)
 
 	return r
 }

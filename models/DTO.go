@@ -50,7 +50,7 @@ type ChaosRequest struct {
 	Players    uint `json:"players`
 	Packs      uint `json:"packs"`
 	Modern     bool `json:"modern"`
-	TotalChaos bool `json:"total_chaos"`
+	TotalChaos bool `json:"totalChaos"`
 }
 
 type CubeDraftRequest struct {

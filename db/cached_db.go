@@ -28,9 +28,9 @@ func GetSet(setCode string) (*entities.Set, error) {
 	return fetchedSet, nil
 }
 
-func GetSets() ([]entities.Set, error) {
+func GetSets() (*[]entities.Set, error) {
 	if cachedSets, found := setCache.Get(getSetsKey); found {
-		return cachedSets.([]entities.Set), nil
+		return cachedSets.(*[]entities.Set), nil
 	}
 
 	fetchedSets, err := getSets()

@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+var modernTime = time.Date(2003, 07, 25, 0, 0, 0, 0, time.UTC)
+
 func MakePacks(sets []string) (packs []models.CardPool, err error) {
 	for i := 0; i < len(sets); i++ {
 		setCode := sets[i]
@@ -92,5 +94,26 @@ func getCards(s *entities.Set, protoCards []entities.ProtoCard) (cardPool models
 
 		cardPool.Add(c, protoCards[i].Foil)
 	}
+	return
+}
+
+func MakeChaosPacks(req *models.ChaosRequest) (packs []models.CardPool, err error) {
+	sets, err := getChaosSets(req.Modern)
+	if err != nil {
+		return
+	}
+	if !req.TotalChaos {
+		for i := 0; i < int(req.Players*req.Packs); i++ {
+			randomIndex := rand.Intn(len(*sets))
+			randomSet := (*sets)[randomIndex]
+			pack, error := MakeRegularPack(&randomSet)
+			if error != nil {
+				i--
+				continue
+			}
+			packs = append(packs, pack)
+		}
+	}
+
 	return
 }

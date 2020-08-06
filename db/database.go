@@ -50,12 +50,12 @@ func GetDB() *gorm.DB {
 	return DB
 }
 
-func getSets() ([]entities.Set, error) {
+func getSets() (*[]entities.Set, error) {
 	s := make([]entities.Set, 0)
-	if err := DB.Order("release_date DESC").Find(&s).Error; err != nil {
+	if err := DB.Set("gorm:auto_preload", true).Find(&s).Error; err != nil {
 		return nil, err
 	}
-	return s, nil
+	return &s, nil
 }
 
 func fetchSet(setCode string) (*entities.Set, error) {
