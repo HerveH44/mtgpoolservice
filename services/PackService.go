@@ -106,7 +106,12 @@ func MakeChaosPacks(req *models.ChaosRequest) (packs []models.CardPool, err erro
 		for i := 0; i < int(req.Players*req.Packs); i++ {
 			randomIndex := rand.Intn(len(*sets))
 			randomSet := (*sets)[randomIndex]
-			pack, error := MakeRegularPack(&randomSet)
+			fullSet, error := db.GetSet(randomSet.Code)
+			if error != nil {
+				i--
+				continue
+			}
+			pack, error := MakeRegularPack(fullSet)
 			if error != nil {
 				i--
 				continue

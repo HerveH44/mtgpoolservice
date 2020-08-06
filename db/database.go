@@ -52,7 +52,7 @@ func GetDB() *gorm.DB {
 
 func getSets() (*[]entities.Set, error) {
 	s := make([]entities.Set, 0)
-	if err := DB.Set("gorm:auto_preload", true).Find(&s).Error; err != nil {
+	if err := DB.Find(&s).Error; err != nil {
 		return nil, err
 	}
 	return &s, nil
