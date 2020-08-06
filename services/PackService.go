@@ -13,7 +13,7 @@ import (
 
 var modernTime = time.Date(2003, 07, 25, 0, 0, 0, 0, time.UTC)
 
-func MakePacks(sets []string) (packs []models.CardPool, err error) {
+func MakePacks(sets []string) (packs []*models.CardPool, err error) {
 	for i := 0; i < len(sets); i++ {
 		setCode := sets[i]
 
@@ -58,7 +58,7 @@ func MakeCubePacks(req *models.CubeDraftRequest) (packs []models.CardPool, err e
 	return
 }
 
-func MakeRegularPack(s *entities.Set) (models.CardPool, error) {
+func MakeRegularPack(s *entities.Set) (*models.CardPool, error) {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	configuration, err := s.GetRandomConfiguration()
@@ -82,7 +82,7 @@ func MakeRegularPack(s *entities.Set) (models.CardPool, error) {
 		return nil, err
 	}
 
-	return cards, nil
+	return &cards, nil
 }
 
 func getCards(s *entities.Set, protoCards []entities.ProtoCard) (cardPool models.CardPool, err error) {
@@ -104,21 +104,32 @@ func MakeChaosPacks(req *models.ChaosRequest) (packs []models.CardPool, err erro
 	}
 	if !req.TotalChaos {
 		for i := 0; i < int(req.Players*req.Packs); i++ {
-			randomIndex := rand.Intn(len(*sets))
-			randomSet := (*sets)[randomIndex]
-			fullSet, error := db.GetSet(randomSet.Code)
+			pack, error := makeRandomPack(sets)
 			if error != nil {
 				i--
 				continue
 			}
-			pack, error := MakeRegularPack(fullSet)
-			if error != nil {
-				i--
-				continue
-			}
-			packs = append(packs, pack)
+
+			packs = append(packs, *pack)
 		}
 	}
 
 	return
+}
+
+func makeRandomPack(sets *[]entities.Set) (*models.CardPool, error) {
+	randomIndex := rand.Intn(len(*sets))
+	randomSet := (*sets)[randomIndex]
+
+	fullSet, error := db.GetSet(randomSet.Code)
+	if error != nil {
+		return nil, error
+	}
+
+	pack, error := MakeRegularPack(fullSet)
+	if error != nil {
+		return nil, error
+	}
+
+	return pack, nil
 }

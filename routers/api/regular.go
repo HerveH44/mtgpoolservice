@@ -16,7 +16,7 @@ func RegularPacks(c *gin.Context) {
 		return
 	}
 
-	ret := make([]models.CardPool, 0)
+	ret := make([]*models.CardPool, 0)
 	for p := 0; p < request.Players; p++ {
 		packs, err := services.MakePacks(request.Sets)
 		if err != nil {
