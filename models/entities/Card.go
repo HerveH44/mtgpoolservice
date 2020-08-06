@@ -2,7 +2,7 @@ package entities
 
 type Card struct {
 	UUID              string `json:"uuid" gorm:"primary_key"`
-	SetID             string `json:"setCode"`
+	SetID             string `json:"setCode" gorm:"index:pack_idx"`
 	Name              string `json:"name"`
 	Number            string `json:"number"`
 	Layout            string `json:"layout"`
@@ -12,7 +12,7 @@ type Card struct {
 	ConvertedManaCost int    `json:"cmc"`
 	Type              string `json:"type"`
 	ManaCost          string `json:"manaCost"`
-	Rarity            string `json:"rarity"`
+	Rarity            string `json:"rarity" gorm:"index:pack_idx"`
 	Side              string `json:"side"`
 	IsAlternative     bool   `json:"isAlternative"`
 	Color             string `json:"color"`

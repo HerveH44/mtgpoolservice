@@ -63,6 +63,7 @@ func MakeRegularPack(s *entities.Set) (*models.CardPool, error) {
 
 	configuration, err := s.GetRandomConfiguration()
 	if err != nil {
+		makeDefaultPack(s)
 		return nil, err
 	}
 
@@ -83,6 +84,26 @@ func MakeRegularPack(s *entities.Set) (*models.CardPool, error) {
 	}
 
 	return &cards, nil
+}
+
+func makeDefaultPack(s *entities.Set) (cards []entities.Card, err error) {
+	rares, err := db.GetCardsWithRarity(s.Code, 1, "Rare")
+	if err != nil {
+		return nil, err
+	}
+	unco, err := db.GetCardsWithRarity(s.Code, 3, "Uncommon")
+	if err != nil {
+		return nil, err
+	}
+	commons, err := db.GetCardsWithRarity(s.Code, 10, "Common")
+	if err != nil {
+		return nil, err
+	}
+
+	cards = append(cards, rares...)
+	cards = append(cards, unco...)
+	cards = append(cards, commons...)
+	return
 }
 
 func getCards(s *entities.Set, protoCards []entities.ProtoCard) (cardPool models.CardPool, err error) {

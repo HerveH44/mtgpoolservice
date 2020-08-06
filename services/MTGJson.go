@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -33,19 +34,37 @@ func UpdateSets() error {
 	var setsNumber = len(allPrintings.Data)
 	log.Println("sets found", setsNumber)
 
-	i := 0
 	ordereredSetsCode := orderSetsByDate(&allPrintings.Data)
 	isCubable := buildIsCubableFunc(ordereredSetsCode)
-	for setName, set := range allPrintings.Data {
-		i++
-		fmt.Printf("%d/%d - saving set %s\n", i, setsNumber, setName)
+
+	var wg sync.WaitGroup
+	sets := make(chan mtgjson.MTGJsonSet, setsNumber)
+
+	for w := 1; w < 10; w++ {
+		wg.Add(1)
+		go importSetWorker(sets, isCubable, &wg)
+	}
+
+	for _, set := range allPrintings.Data {
+		sets <- set
+	}
+
+	close(sets)
+	wg.Wait()
+	return nil
+}
+
+func importSetWorker(sets <-chan mtgjson.MTGJsonSet, isCubable func(string, *mtgjson.Card) bool, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for set := range sets {
+		fmt.Println("Importing set", set.Code, "with name ", set.Name)
 		entity := mtgjson.MapMTGJsonSetToEntity(set, isCubable)
-		if err := database.GetDB().Save(&entity).Error; err != nil {
-			fmt.Printf("could not save the card %s - %s\n", setName, err)
-			return err
+		if len(entity.Cards) == 0 {
+			fmt.Println("No cards parsed for set", set.Name)
+		} else if err := database.GetDB().Save(&entity).Error; err != nil {
+			fmt.Printf("could not save the set %s - %s\n", set.Name, err)
 		}
 	}
-	return nil
 }
 
 func buildIsCubableFunc(orderedSetCodes map[string]int) func(string, *mtgjson.Card) bool {
