@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func MakePacks(sets []string) (packs []*models.CardPool, err error) {
+func MakeRegularPacks(sets []string) (packs []*models.CardPool, err error) {
 	for i := 0; i < len(sets); i++ {
 		setCode := sets[i]
 

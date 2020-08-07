@@ -18,7 +18,7 @@ func RegularPacks(c *gin.Context) {
 
 	ret := make([]*models.CardPool, 0)
 	for p := 0; p < request.Players; p++ {
-		packs, err := services.MakePacks(request.Sets)
+		packs, err := services.MakeRegularPacks(request.Sets)
 		if err != nil {
 			logging.Warn(err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
