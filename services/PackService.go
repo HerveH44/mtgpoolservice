@@ -123,25 +123,59 @@ func MakeChaosPacks(req *models.ChaosRequest) (packs []models.CardPool, err erro
 	if err != nil {
 		return
 	}
-	if !req.TotalChaos {
-		numCPUs := runtime.NumCPU()
 
-		pool := tunny.NewFunc(numCPUs, func(payload interface{}) interface{} {
-			sets := payload.(*[]entities.Set)
+	numCPUs := runtime.NumCPU()
+	pool := tunny.NewFunc(numCPUs, func(payload interface{}) interface{} {
+		sets := payload.(*[]entities.Set)
+		if !req.TotalChaos {
 			return makeRandomPack(sets)
-		})
-		defer pool.Close()
-		for i := 0; i < int(req.Players*req.Packs); i++ {
-			result := pool.Process(sets).(RandomPackResult)
-			if result.Error != nil {
-				i--
-				continue
-			}
-			packs = append(packs, *result.Pool)
 		}
+		return makeTotalChaosPack(sets)
+	})
+	defer pool.Close()
+
+	for i := 0; i < int(req.Players*req.Packs); i++ {
+		result := pool.Process(sets).(RandomPackResult)
+		if result.Error != nil {
+			i--
+			continue
+		}
+		packs = append(packs, *result.Pool)
 	}
 
 	return
+}
+
+func makeTotalChaosPack(sets *[]entities.Set) interface{} {
+	pack := models.CardPool{}
+
+	cards, err := getRandomCards(sets, 1, "Rare")
+	if err != nil {
+		return RandomPackResult{Error: err}
+	}
+
+	unco, err := getRandomCards(sets, 3, "Uncommon")
+	if err != nil {
+		return RandomPackResult{Error: err}
+	}
+
+	common, err := getRandomCards(sets, 10, "Common")
+	if err != nil {
+		return RandomPackResult{Error: err}
+	}
+
+	pack.AddCards(&cards)
+	pack.AddCards(&unco)
+	pack.AddCards(&common)
+	return RandomPackResult{Pool: &pack}
+}
+
+func getRandomCards(sets *[]entities.Set, number int, rarity string) ([]entities.Card, error) {
+	setCodes := make([]string, len(*sets))
+	for _, set := range *sets {
+		setCodes = append(setCodes, set.Code)
+	}
+	return db.GetRandomCardsWithRarity(setCodes, number, rarity)
 }
 
 type RandomPackResult struct {
