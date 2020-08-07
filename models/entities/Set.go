@@ -76,3 +76,13 @@ func (s *Set) GetCard(uuid string) (c *Card, err error) {
 	}
 	return
 }
+
+func (s *Set) IsExpansionOrCore() bool {
+	return s.Type == "expansion" || s.Type == "core"
+}
+
+var modernTime = time.Date(2003, 07, 25, 0, 0, 0, 0, time.UTC)
+
+func (s *Set) IsModern() bool {
+	return modernTime.Before(s.ReleaseDate)
+}

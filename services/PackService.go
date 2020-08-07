@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-var modernTime = time.Date(2003, 07, 25, 0, 0, 0, 0, time.UTC)
-
 func MakePacks(sets []string) (packs []*models.CardPool, err error) {
 	for i := 0; i < len(sets); i++ {
 		setCode := sets[i]
@@ -63,8 +61,7 @@ func MakeRegularPack(s *entities.Set) (*models.CardPool, error) {
 
 	configuration, err := s.GetRandomConfiguration()
 	if err != nil {
-		makeDefaultPack(s)
-		return nil, err
+		return makeDefaultPack(s)
 	}
 
 	protoCards := make([]entities.ProtoCard, 0)
@@ -86,7 +83,8 @@ func MakeRegularPack(s *entities.Set) (*models.CardPool, error) {
 	return &cards, nil
 }
 
-func makeDefaultPack(s *entities.Set) (cards []entities.Card, err error) {
+func makeDefaultPack(s *entities.Set) (cards *models.CardPool, err error) {
+	cards = &models.CardPool{}
 	rares, err := db.GetCardsWithRarity(s.Code, 1, "Rare")
 	if err != nil {
 		return nil, err
@@ -100,9 +98,9 @@ func makeDefaultPack(s *entities.Set) (cards []entities.Card, err error) {
 		return nil, err
 	}
 
-	cards = append(cards, rares...)
-	cards = append(cards, unco...)
-	cards = append(cards, commons...)
+	cards.AddCards(&rares)
+	cards.AddCards(&unco)
+	cards.AddCards(&commons)
 	return
 }
 

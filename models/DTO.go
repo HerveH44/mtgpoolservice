@@ -46,6 +46,12 @@ func (c *CardPool) Add(card *entities.Card, isFoil bool) {
 	*c = append(*c, cardResponse)
 }
 
+func (c *CardPool) AddCards(cards *[]entities.Card) {
+	for _, card := range *cards {
+		c.Add(&card, false)
+	}
+}
+
 type ChaosRequest struct {
 	Players    uint `json:"players`
 	Packs      uint `json:"packs"`

@@ -132,6 +132,6 @@ func getCardWithName(name string) (card entities.Card, err error) {
 }
 
 func GetCardsWithRarity(setCode string, number int, rarity string) (cards []entities.Card, err error) {
-	err = DB.Raw("SELECT * from cards where rarity = ? and set_id = ? ORDER BY random() LIMIT ?", rarity, setCode, number).Scan(&cards).Error
+	err = DB.Raw("SELECT * from cards where set_id = ? AND rarity = ? ORDER BY random() LIMIT ?", setCode, rarity, number).Scan(&cards).Error
 	return
 }

@@ -56,15 +56,15 @@ func getChaosSets(modernOnly bool) (*[]entities.Set, error) {
 		return nil, err
 	}
 
-	if !modernOnly {
-		return sets, nil
-	}
-
 	modernOnlySets := make([]entities.Set, 0)
 	for _, set := range *sets {
-		if set.ReleaseDate.After(modernTime) {
-			modernOnlySets = append(modernOnlySets, set)
+		if !set.IsExpansionOrCore() {
+			continue
 		}
+		if modernOnly && !set.IsModern() {
+			continue
+		}
+		modernOnlySets = append(modernOnlySets, set)
 	}
 	return &modernOnlySets, nil
 }
