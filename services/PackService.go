@@ -24,7 +24,7 @@ func MakeRegularPacks(sets []string) (packs []*models.CardPool, err error) {
 			return nil, errors.New("set " + setCode + "does not exist")
 		}
 
-		pack, err := MakeRegularPack(set)
+		pack, err := makeRegularPack(set)
 		if err != nil {
 			fmt.Println(err)
 			logging.Warn(err)
@@ -58,7 +58,7 @@ func MakeCubePacks(req *models.CubeDraftRequest) (packs []models.CardPool, err e
 	return
 }
 
-func MakeRegularPack(s *entities.Set) (*models.CardPool, error) {
+func makeRegularPack(s *entities.Set) (*models.CardPool, error) {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	configuration, err := s.GetRandomConfiguration()
@@ -158,7 +158,7 @@ func makeRandomPack(sets *[]entities.Set) (ret RandomPackResult) {
 		return RandomPackResult{Error: err}
 	}
 
-	pack, err := MakeRegularPack(fullSet)
+	pack, err := makeRegularPack(fullSet)
 	if err != nil {
 		return RandomPackResult{Error: err}
 	}
