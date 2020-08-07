@@ -3,11 +3,13 @@ package services
 import (
 	"errors"
 	"fmt"
+	"github.com/Jeffail/tunny"
 	"math/rand"
 	"mtgpoolservice/db"
 	"mtgpoolservice/logging"
 	"mtgpoolservice/models"
 	"mtgpoolservice/models/entities"
+	"runtime"
 	"time"
 )
 
@@ -122,33 +124,44 @@ func MakeChaosPacks(req *models.ChaosRequest) (packs []models.CardPool, err erro
 		return
 	}
 	if !req.TotalChaos {
+		numCPUs := runtime.NumCPU()
+
+		pool := tunny.NewFunc(numCPUs, func(payload interface{}) interface{} {
+			sets := payload.(*[]entities.Set)
+			return makeRandomPack(sets)
+		})
+		defer pool.Close()
 		for i := 0; i < int(req.Players*req.Packs); i++ {
-			pack, error := makeRandomPack(sets)
-			if error != nil {
+			result := pool.Process(sets).(RandomPackResult)
+			if result.Error != nil {
 				i--
 				continue
 			}
-
-			packs = append(packs, *pack)
+			packs = append(packs, *result.Pool)
 		}
 	}
 
 	return
 }
 
-func makeRandomPack(sets *[]entities.Set) (*models.CardPool, error) {
+type RandomPackResult struct {
+	Pool  *models.CardPool
+	Error error
+}
+
+func makeRandomPack(sets *[]entities.Set) (ret RandomPackResult) {
 	randomIndex := rand.Intn(len(*sets))
 	randomSet := (*sets)[randomIndex]
 
-	fullSet, error := db.GetSet(randomSet.Code)
-	if error != nil {
-		return nil, error
+	fullSet, err := db.GetSet(randomSet.Code)
+	if err != nil {
+		return RandomPackResult{Error: err}
 	}
 
-	pack, error := MakeRegularPack(fullSet)
-	if error != nil {
-		return nil, error
+	pack, err := MakeRegularPack(fullSet)
+	if err != nil {
+		return RandomPackResult{Error: err}
 	}
 
-	return pack, nil
+	return RandomPackResult{Pool: pack}
 }
