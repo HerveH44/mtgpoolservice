@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	database "mtgpoolservice/db"
+	"mtgpoolservice/models/entities"
 	"mtgpoolservice/models/mtgjson"
 	"mtgpoolservice/utils"
 	"net/http"

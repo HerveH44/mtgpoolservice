@@ -8,7 +8,7 @@ import (
 )
 
 func CubePacks(c *gin.Context) {
-	var req models.CubeDraftRequest
+	var req models.CubeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

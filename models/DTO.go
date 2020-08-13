@@ -53,27 +53,21 @@ func (c *CardPool) AddCards(cards *[]entities.Card) {
 }
 
 type ChaosRequest struct {
-	Players    uint `json:"players`
+	Players    uint `json:"players"`
 	Packs      uint `json:"packs"`
 	Modern     bool `json:"modern"`
 	TotalChaos bool `json:"totalChaos"`
 }
 
-type CubeDraftRequest struct {
+type CubeRequest struct {
 	Cubelist       []string `json:"list"`
-	Players        uint     `json:"players`
+	Players        uint     `json:"players"`
 	PlayerPackSize uint     `json:"playerPackSize"`
 	Packs          uint     `json:"packs"`
 }
 
 type CubeListRequest struct {
 	Cubelist []string `json:"list"`
-}
-
-type CubeSealedRequest struct {
-	Cubelist       []string `json:"list"`
-	Players        uint     `json:"players`
-	PlayerPoolSize uint     `json:"player_pool_size"`
 }
 
 type AvailableSetsMap map[string][]SetResponse

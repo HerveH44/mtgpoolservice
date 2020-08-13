@@ -41,7 +41,7 @@ func CheckCubeList(req models.CubeListRequest) []string {
 	return missingCardNames
 }
 
-func MakeCubePacks(req *models.CubeDraftRequest) (packs []models.CardPool, err error) {
+func MakeCubePacks(req *models.CubeRequest) (packs []models.CardPool, err error) {
 	cubeCards, missingCards := db.GetCardsByName(req.Cubelist)
 	if len(missingCards) > 0 {
 		return nil, fmt.Errorf("unknown cards", missingCards)
