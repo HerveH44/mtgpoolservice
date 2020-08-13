@@ -52,6 +52,15 @@ func UpdateSets() error {
 
 	close(sets)
 	wg.Wait()
+
+	entity := entities.Version{
+		Date:            time.Time(allPrintings.Meta.Date),
+		SemanticVersion: allPrintings.Meta.Version,
+	}
+	if err := database.GetDB().Save(&entity).Error; err != nil {
+		fmt.Printf("could not save the version %w\n", err)
+	}
+
 	return nil
 }
 
