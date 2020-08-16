@@ -7,8 +7,6 @@ import (
 	"sort"
 )
 
-var playableSetTypes = []string{"core", "expansion", "draft_innovation", "funny", "starter", "masters"}
-
 func GetAvailableSets() (models.AvailableSetsMap, error) {
 	sets, err := database.GetSets()
 	if err != nil {
@@ -17,13 +15,28 @@ func GetAvailableSets() (models.AvailableSetsMap, error) {
 	return buildAvailableSetsMap(sets), nil
 }
 
+func GetLatestSet() (models.LatestSetResponse, error) {
+	latestSet, err := database.GetLatestSet()
+	if err != nil {
+		return models.LatestSetResponse{}, err
+	}
+
+	return models.LatestSetResponse{
+		SetResponse: models.SetResponse{
+			Code: latestSet.Code,
+			Name: latestSet.Name,
+		},
+		Type: latestSet.Type,
+	}, nil
+}
+
 func buildAvailableSetsMap(sets *[]entities.Set) models.AvailableSetsMap {
 	setMap := setupSetsMap()
 
 	for _, set := range *sets {
 		setType := set.Type
-		i := sort.SearchStrings(playableSetTypes, setType)
-		if i >= len(playableSetTypes) || playableSetTypes[i] != setType {
+		i := sort.SearchStrings(database.PlayableSetTypes, setType)
+		if i >= len(database.PlayableSetTypes) || database.PlayableSetTypes[i] != setType {
 			continue
 		}
 		setMap[setType] = append(setMap[setType], models.SetResponse{
@@ -36,7 +49,7 @@ func buildAvailableSetsMap(sets *[]entities.Set) models.AvailableSetsMap {
 
 func setupSetsMap() (setMap models.AvailableSetsMap) {
 	setMap = make(models.AvailableSetsMap)
-	for _, t := range playableSetTypes {
+	for _, t := range database.PlayableSetTypes {
 		setMap[t] = make([]models.SetResponse, 0)
 	}
 
@@ -45,7 +58,7 @@ func setupSetsMap() (setMap models.AvailableSetsMap) {
 		Code: "RNG",
 		Name: "Random Set",
 	})
-	sort.Strings(playableSetTypes)
+	sort.Strings(database.PlayableSetTypes)
 
 	return setMap
 }

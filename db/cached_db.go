@@ -7,6 +7,7 @@ import (
 )
 
 var getSetsKey = "__available_sets__"
+var latestSetKey = "__latest_set__"
 
 // Keep the sets for 60 minutes at most...
 // Could be more if we have enough memory and updates of MTGJson are not often
@@ -40,6 +41,20 @@ func GetSets() (*[]entities.Set, error) {
 
 	setCache.SetDefault(getSetsKey, fetchedSets)
 	return fetchedSets, nil
+}
+
+func GetLatestSet() (entities.Set, error) {
+	if cachedSets, found := setCache.Get(latestSetKey); found {
+		return cachedSets.(entities.Set), nil
+	}
+
+	fetchedLatestSet, err := getLatestSet()
+	if err != nil {
+		return entities.Set{}, err
+	}
+
+	setCache.SetDefault(latestSetKey, fetchedLatestSet)
+	return fetchedLatestSet, nil
 }
 
 func GetCardWithName(name string) (card entities.Card, err error) {

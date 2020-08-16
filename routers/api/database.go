@@ -17,6 +17,16 @@ func AvailableSets(context *gin.Context) {
 	context.JSON(http.StatusOK, setMap)
 }
 
+func LatestSet(context *gin.Context) {
+	latestSet, err := services.GetLatestSet()
+	if err != nil {
+		context.JSON(500, gin.H{"error": "unexpected error"})
+		return
+	}
+
+	context.JSON(http.StatusOK, latestSet)
+}
+
 func ImportAllSets(context *gin.Context) {
 	err := services.UpdateSets()
 	if err != nil {

@@ -12,6 +12,11 @@ type SetResponse struct {
 	Name string `json:"name"`
 }
 
+type LatestSetResponse struct {
+	SetResponse
+	Type string `json:"type"`
+}
+
 type VersionResponse struct {
 	Date    string `json:"date"`
 	Version string `json:"version"`

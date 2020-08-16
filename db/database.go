@@ -17,6 +17,8 @@ type Database struct {
 	*gorm.DB
 }
 
+var PlayableSetTypes = []string{"core", "expansion", "draft_innovation", "funny", "starter", "masters"}
+
 var DB *gorm.DB
 
 // Opening a database and save the reference to `Database` struct.
@@ -138,5 +140,10 @@ func GetCardsWithRarity(setCode string, number int, rarity string) (cards []enti
 
 func GetRandomCardsWithRarity(sets []string, number int, rarity string) (cards []entities.Card, err error) {
 	err = DB.Raw("SELECT * from cards where set_id in (?) AND rarity = ? ORDER BY random() LIMIT ?", sets, rarity, number).Scan(&cards).Error
+	return
+}
+
+func getLatestSet() (set entities.Set, err error) {
+	err = DB.Where("type in (?)", PlayableSetTypes).Order("release_date DESC").First(&set).Error
 	return
 }
