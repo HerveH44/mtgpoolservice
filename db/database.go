@@ -72,15 +72,13 @@ func FetchLastVersion() (*entities.Version, error) {
 	return &v, err
 }
 
-func addToCardPool(cards chan entities.Card, cr *models.CardPool, wg *sync.WaitGroup) {
-	defer wg.Done()
+func addToCardPool(cards chan entities.Card, cr *models.CardPool) {
 	for c := range cards {
 		cr.Add(&c, false)
 	}
 }
 
-func addToMissingCards(missingCards <-chan string, missingCardNames *[]string, wg *sync.WaitGroup) {
-	defer wg.Done()
+func addToMissingCards(missingCards <-chan string, missingCardNames *[]string) {
 	for c := range missingCards {
 		*missingCardNames = append(*missingCardNames, c)
 	}
@@ -109,8 +107,8 @@ func GetCardsByName(names []string) (cr models.CardPool, missingCardNames []stri
 		go getCard(jobs, missingCards, cards, &wg)
 	}
 
-	go addToMissingCards(missingCards, &missingCardNames, &wg)
-	go addToCardPool(cards, &cr, &wg)
+	go addToMissingCards(missingCards, &missingCardNames)
+	go addToCardPool(cards, &cr)
 
 	for _, name := range names {
 		jobs <- name
@@ -118,6 +116,8 @@ func GetCardsByName(names []string) (cr models.CardPool, missingCardNames []stri
 
 	close(jobs)
 	wg.Wait()
+	close(cards)
+	close(missingCards)
 	return
 }
 
