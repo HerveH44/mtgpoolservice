@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm/dialects/postgres"
 	"mtgpoolservice/models/entities"
+	"mtgpoolservice/utils"
 	"strings"
 	"time"
 )
@@ -83,7 +84,7 @@ func MakeCards(code string, cards []Card, isCubable func(string, *Card) bool) (r
 			ConvertedManaCost: int(card.ConvertedManaCost),
 			Type:              card.Types[0], //TODO: check if always true
 			ManaCost:          card.ManaCost,
-			Rarity:            strings.Title(card.Rarity),
+			Rarity:            GetRarity(&card),
 			Side:              card.Side,
 			IsAlternative:     card.IsAlternative,
 			Color:             GetColor(card.Colors),
@@ -97,6 +98,13 @@ func MakeCards(code string, cards []Card, isCubable func(string, *Card) bool) (r
 	}
 
 	return
+}
+
+func GetRarity(c *Card) string {
+	if utils.Include(c.Supertypes, "Basic") {
+		return "Basic"
+	}
+	return strings.Title(c.Rarity)
 }
 
 func MakeFaceName(faceName string, name string) string {

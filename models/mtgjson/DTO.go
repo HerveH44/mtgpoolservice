@@ -82,24 +82,24 @@ type Card struct {
 		ScryfallIllustrationID string `json:"scryfallIllustrationId"`
 		ScryfallOracleID       string `json:"scryfallOracleId"`
 	} `json:"identifiers,omitempty"`
-	Layout        string        `json:"layout"`
-	Number        string        `json:"number"`
-	Power         string        `json:"power,omitempty"`
-	Toughness     string        `json:"toughness,omitempty"`
-	Printings     []string      `json:"printings"`
-	Rarity        string        `json:"rarity"`
-	Text          string        `json:"text,omitempty"`
-	Type          string        `json:"type"`
-	Types         []string      `json:"types"`
-	Subtypes      []string      `json:"subtypes"`
-	Supertypes    []interface{} `json:"supertypes"`
-	IsReprint     bool          `json:"isReprint,omitempty"`
-	IsAlternative bool          `json:"isAlternative,omitempty"`
-	FrameEffects  []string      `json:"frameEffects,omitempty"`
-	OtherFaceIds  []string      `json:"otherFaceIds,omitempty"`
-	Side          string        `json:"side,omitempty"`
-	Variations    []string      `json:"variations,omitempty"`
-	IsPromo       bool          `json:"isPromo"`
-	IsStarter     bool          `json:"isStarter"`
-	BorderColor   string        `json:"borderColor"`
+	Layout        string   `json:"layout"`
+	Number        string   `json:"number"`
+	Power         string   `json:"power,omitempty"`
+	Toughness     string   `json:"toughness,omitempty"`
+	Printings     []string `json:"printings"`
+	Rarity        string   `json:"rarity"`
+	Text          string   `json:"text,omitempty"`
+	Type          string   `json:"type"`
+	Types         []string `json:"types"`
+	Subtypes      []string `json:"subtypes"`
+	Supertypes    []string `json:"supertypes"`
+	IsReprint     bool     `json:"isReprint,omitempty"`
+	IsAlternative bool     `json:"isAlternative,omitempty"`
+	FrameEffects  []string `json:"frameEffects,omitempty"`
+	OtherFaceIds  []string `json:"otherFaceIds,omitempty"`
+	Side          string   `json:"side,omitempty"`
+	Variations    []string `json:"variations,omitempty"`
+	IsPromo       bool     `json:"isPromo"`
+	IsStarter     bool     `json:"isStarter"`
+	BorderColor   string   `json:"borderColor"`
 }
