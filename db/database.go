@@ -144,6 +144,11 @@ func GetRandomCardsWithRarity(sets []string, number int, rarity string) (cards [
 }
 
 func getLatestSet() (set entities.Set, err error) {
-	err = DB.Where("type in (?)", []string{"core", "expansion"}).Order("release_date DESC").First(&set).Error
+	err = DB.
+		Where("type in (?)", []string{"core", "expansion"}).
+		Where("release_date <= now()").
+		Order("release_date DESC").
+		First(&set).
+		Error
 	return
 }
