@@ -23,15 +23,18 @@ var DB *gorm.DB
 
 // Opening a database and save the reference to `Database` struct.
 func Init() *gorm.DB {
-	db, err := gorm.Open(setting.DatabaseSetting.Type, fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s",
+	db, err := gorm.Open(setting.DatabaseSetting.Type, fmt.Sprintf(
+		"host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
 		setting.DatabaseSetting.Host,
 		setting.DatabaseSetting.Port,
 		setting.DatabaseSetting.User,
 		setting.DatabaseSetting.Name,
-		setting.DatabaseSetting.Password))
+		setting.DatabaseSetting.Password,
+		setting.DatabaseSetting.SslMode))
 
 	if err != nil {
 		fmt.Println("entities err: ", err)
+		panic(err)
 	}
 
 	db.DB().SetMaxIdleConns(10)

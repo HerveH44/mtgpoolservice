@@ -40,6 +40,7 @@ type Database struct {
 	Port     string
 	Name     string
 	Log      bool
+	SslMode  string
 }
 
 var DatabaseSetting = &Database{}
