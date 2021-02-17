@@ -2,156 +2,36 @@ package db
 
 import (
 	"fmt"
+	"mtgpoolservice/logging"
+	"mtgpoolservice/setting"
+
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"log"
-	"mtgpoolservice/logging"
-	"mtgpoolservice/models"
-	"mtgpoolservice/models/entities"
-	"mtgpoolservice/setting"
-	"strings"
-	"sync"
 )
 
-type Database struct {
-	*gorm.DB
-}
-
-var PlayableSetTypes = []string{"core", "expansion", "draft_innovation", "funny", "starter", "masters"}
-
-var DB *gorm.DB
-
 // Opening a database and save the reference to `Database` struct.
-func Init() *gorm.DB {
-	db, err := gorm.Open(setting.DatabaseSetting.Type, fmt.Sprintf(
+func ConnectDB(settings setting.Settings) (db *gorm.DB, err error) {
+	db, err = gorm.Open("postgres", fmt.Sprintf(
 		"host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
-		setting.DatabaseSetting.Host,
-		setting.DatabaseSetting.Port,
-		setting.DatabaseSetting.User,
-		setting.DatabaseSetting.Name,
-		setting.DatabaseSetting.Password,
-		setting.DatabaseSetting.SslMode))
+		settings.Database.Host,
+		settings.Database.Port,
+		settings.Database.User,
+		settings.Database.Name,
+		settings.Database.Password,
+		settings.Database.SslMode))
 
 	if err != nil {
-		fmt.Println("entities err: ", err)
-		panic(err)
+		return nil, err
 	}
 
 	db.DB().SetMaxIdleConns(10)
-	db.LogMode(setting.DatabaseSetting.Log)
+	db.LogMode(settings.Database.Log)
 	db.SetLogger(logging.GetLogger())
 
-	db.AutoMigrate(&entities.Set{})
-	db.AutoMigrate(&entities.Card{})
-	db.AutoMigrate(&entities.Sheet{})
-	db.AutoMigrate(&entities.SheetCard{})
-	db.AutoMigrate(&entities.Version{})
-	DB = db
-	return DB
-}
-
-// Using this function to get a connection, you can create your connection pool here.
-func GetDB() *gorm.DB {
-	return DB
-}
-
-func getSets() (*[]entities.Set, error) {
-	s := make([]entities.Set, 0)
-	if err := DB.Order("release_date DESC").Find(&s).Error; err != nil {
-		return nil, err
-	}
-	return &s, nil
-}
-
-func fetchSet(setCode string) (*entities.Set, error) {
-	var s entities.Set
-	err := DB.Where(" code = ?", setCode).Set("gorm:auto_preload", true).First(&s).Error
-	return &s, err
-}
-
-func FetchLastVersion() (*entities.Version, error) {
-	var v entities.Version
-	err := DB.Order("date DESC").First(&v).Error
-	return &v, err
-}
-
-func addToCardPool(cards chan entities.Card, cr *models.CardPool) {
-	for c := range cards {
-		cr.Add(&c, false)
-	}
-}
-
-func addToMissingCards(missingCards <-chan string, missingCardNames *[]string) {
-	for c := range missingCards {
-		*missingCardNames = append(*missingCardNames, c)
-	}
-}
-
-func getCard(jobs <-chan string, missingCards chan<- string, foundCards chan<- entities.Card, wg *sync.WaitGroup) {
-	defer wg.Done()
-	for j := range jobs {
-		c, err := GetCardWithName(j)
-		if err != nil {
-			missingCards <- j
-		} else {
-			foundCards <- c
-		}
-	}
-}
-
-func GetCardsByName(names []string) (cr models.CardPool, missingCardNames []string) {
-	jobs := make(chan string, len(names))
-	missingCards := make(chan string)
-	cards := make(chan entities.Card)
-	var wg sync.WaitGroup
-
-	for w := 1; w <= 10; w++ {
-		wg.Add(1)
-		go getCard(jobs, missingCards, cards, &wg)
-	}
-
-	go addToMissingCards(missingCards, &missingCardNames)
-	go addToCardPool(cards, &cr)
-
-	for _, name := range names {
-		jobs <- name
-	}
-
-	close(jobs)
-	wg.Wait()
-	close(cards)
-	close(missingCards)
-	return
-}
-
-func getCardWithName(name string) (card entities.Card, err error) {
-	if isMultiCard := strings.ContainsAny(name, "/"); isMultiCard {
-		err = DB.Where("cubable = true AND name ILIKE ?", name).First(&card).Error
-	} else {
-		err = DB.Where("cubable = true AND face_name = ?", name).First(&card).Error
-	}
-	if err != nil {
-		log.Println("could not find card with name", name)
-	}
-	return
-}
-
-func GetCardsWithRarity(setCode string, number int, rarity string) (cards []entities.Card, err error) {
-	err = DB.Raw("SELECT * from cards where set_id = ? AND rarity = ? ORDER BY random() LIMIT ?", setCode, rarity, number).Scan(&cards).Error
-	return
-}
-
-func GetRandomCardsWithRarity(sets []string, number int, rarity string) (cards []entities.Card, err error) {
-	err = DB.Raw("SELECT * from cards where set_id in (?) AND rarity = ? ORDER BY random() LIMIT ?", sets, rarity, number).Scan(&cards).Error
-	return
-}
-
-func getLatestSet() (set entities.Set, err error) {
-	err = DB.
-		Where("type in (?)", []string{"core", "expansion"}).
-		Where("release_date <= now()").
-		Order("release_date DESC").
-		First(&set).
-		Error
+	db.AutoMigrate(&Set{})
+	db.AutoMigrate(&Card{})
+	db.AutoMigrate(&Sheet{})
+	db.AutoMigrate(&SheetCard{})
+	db.AutoMigrate(&Version{})
 	return
 }

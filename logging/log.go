@@ -1,12 +1,9 @@
 package logging
 
 import (
-	"fmt"
-	"log"
-	"mtgpoolservice/file"
+	log "github.com/sirupsen/logrus"
+	"mtgpoolservice/setting"
 	"os"
-	"path/filepath"
-	"runtime"
 )
 
 type Level int
@@ -35,56 +32,56 @@ func GetLogger() *log.Logger {
 }
 
 // Setup initialize the log instance
-func Setup() {
-	var err error
-	filePath := getLogFilePath()
-	fileName := getLogFileName()
-	F, err = file.MustOpen(fileName, filePath)
-	if err != nil {
-		log.Fatalf("logging.Setup err: %v", err)
-	}
+func Setup(settings setting.App) (err error) {
+	//filePath := getLogFilePath(settings.RuntimeRootPath, settings.LogSavePath)
+	//fileName := getLogFileName(settings.LogSaveName, settings.TimeFormat, settings.LogFileExt)
+	//F, err = file.MustOpen(fileName, filePath)
+	//if err != nil {
+	//	log.Fatalf("logging.Setup err: %v", err)
+	//}
 
-	logger = log.New(F, DefaultPrefix, log.LstdFlags)
+	logger = log.StandardLogger()
+	return
 }
 
 // Debug output logs at debug level
 func Debug(v ...interface{}) {
-	setPrefix(DEBUG)
-	logger.Println(v)
+	//setPrefix(DEBUG)
+	logger.Debug(v)
 }
 
 // Info output logs at info level
 func Info(v ...interface{}) {
-	setPrefix(INFO)
-	logger.Println(v)
+	//setPrefix(INFO)
+	logger.Info(v)
 }
 
 // Warn output logs at warn level
 func Warn(v ...interface{}) {
-	setPrefix(WARNING)
-	logger.Println(v)
+	//setPrefix(WARNING)
+	logger.Warn(v)
 }
 
 // Error output logs at error level
 func Error(v ...interface{}) {
-	setPrefix(ERROR)
-	logger.Println(v)
+	//setPrefix(ERROR)
+	logger.Error(v)
 }
 
 // Fatal output logs at fatal level
 func Fatal(v ...interface{}) {
-	setPrefix(FATAL)
+	//setPrefix(FATAL)
 	logger.Fatalln(v)
 }
 
 // setPrefix set the prefix of the log output
-func setPrefix(level Level) {
-	_, file, line, ok := runtime.Caller(DefaultCallerDepth)
-	if ok {
-		logPrefix = fmt.Sprintf("[%s][%s:%d]", levelFlags[level], filepath.Base(file), line)
-	} else {
-		logPrefix = fmt.Sprintf("[%s]", levelFlags[level])
-	}
-
-	logger.SetPrefix(logPrefix)
-}
+//func setPrefix(level Level) {
+//	_, file, line, ok := runtime.Caller(DefaultCallerDepth)
+//	if ok {
+//		logPrefix = fmt.Sprintf("[%s][%s:%d]", levelFlags[level], filepath.Base(file), line)
+//	} else {
+//		logPrefix = fmt.Sprintf("[%s]", levelFlags[level])
+//	}
+//
+//	logger.SetPrefix(logPrefix)
+//}

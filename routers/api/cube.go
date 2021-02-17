@@ -1,14 +1,28 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
-	"mtgpoolservice/models"
-	"mtgpoolservice/services"
+	"fmt"
+	pack "mtgpoolservice/pool"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-func CubePacks(c *gin.Context) {
-	var req models.CubeRequest
+type CubeController interface {
+	CubePacks(c *gin.Context)
+	CubeList(c *gin.Context)
+}
+
+type cubeController struct {
+	packService pack.Service
+}
+
+func NewCubeController(service pack.Service) CubeController {
+	return &cubeController{service}
+}
+
+func (cc *cubeController) CubePacks(c *gin.Context) {
+	var req CubeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -19,7 +33,7 @@ func CubePacks(c *gin.Context) {
 		return
 	}
 
-	packs, err := services.MakeCubePacks(&req)
+	packs, err := cc.packService.MakeCubePacks(&req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -27,17 +41,34 @@ func CubePacks(c *gin.Context) {
 	c.JSON(http.StatusOK, packs)
 }
 
-func CubeList(c *gin.Context) {
-	var request models.CubeListRequest
+func (cc *cubeController) CubeList(c *gin.Context) {
+	var request CubeListRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	errs := services.CheckCubeList(request)
+	errs := cc.packService.CheckCubeList(request)
 	if len(errs) > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errs})
+		var errorMsg string
+		if len(errs) > 10 {
+			errorMsg = fmt.Sprintf("Invalid cards: %v and %d more", errs[:10], len(errs)-10)
+		} else {
+			errorMsg = fmt.Sprintf("Invalid cards: %v", errs)
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": errorMsg})
 	} else {
 		c.Status(200)
 	}
+}
+
+type CubeRequest struct {
+	Cubelist       []string `json:"list"`
+	Players        uint     `json:"players"`
+	PlayerPackSize uint     `json:"playerPackSize"`
+	Packs          uint     `json:"pool"`
+}
+
+type CubeListRequest struct {
+	Cubelist []string `json:"list"`
 }

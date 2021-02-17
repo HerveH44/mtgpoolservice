@@ -9,19 +9,24 @@ import (
 	"time"
 )
 
+type Settings struct {
+	App
+	Database
+	Server
+}
+
 type App struct {
 	PageSize  int
 	PrefixUrl string
 
 	RuntimeRootPath string
+	MTGJsonEndpoint string
 
 	LogSavePath string
 	LogSaveName string
 	LogFileExt  string
 	TimeFormat  string
 }
-
-var AppSetting = &App{}
 
 type Server struct {
 	RunMode      string
@@ -30,10 +35,7 @@ type Server struct {
 	WriteTimeout time.Duration
 }
 
-var ServerSetting = &Server{}
-
 type Database struct {
-	Type     string
 	User     string
 	Password string
 	Host     string
@@ -43,54 +45,52 @@ type Database struct {
 	SslMode  string
 }
 
-var DatabaseSetting = &Database{}
-
 var cfg *ini.File
 
 var dbConnectionRegexp = regexp.MustCompile(`^(?P<Type>.*)://(?P<Username>.*):(?P<Password>.*)@(?P<Host>.*):(?P<Port>\d*)/(?P<DatabaseName>.*)`)
 
-// Setup initialize the configuration instance
-func Setup() {
+// GetSettings initialize the configuration instance
+func GetSettings() (settings Settings) {
 	var err error
 	cfg, err = ini.Load("conf/app.ini")
 	if err != nil {
-		log.Fatalf("setting.Setup, fail to parse 'conf/app.ini': %v", err)
+		log.Fatalf("setting.GetSettings, fail to parse 'conf/app.ini': %v", err)
 	}
 
-	mapTo("app", AppSetting)
-	mapTo("server", ServerSetting)
-	mapTo("database", DatabaseSetting)
+
+	mapTo("app", &settings.App)
+	mapTo("server", &settings.Server)
+	mapTo("database", &settings.Database)
 
 	// Special Heroku settings
 	if envPort, ok := os.LookupEnv("PORT"); ok {
 		if parseInt, err := strconv.Atoi(envPort); err == nil {
-			ServerSetting.HttpPort = parseInt
+			settings.Server.HttpPort = parseInt
 		}
 	}
 
 	if dbURL, ok := os.LookupEnv("DATABASE_URL"); ok {
 		paramsMap := getParams(dbConnectionRegexp, dbURL)
-		if val, ok := paramsMap["Type"]; ok {
-			DatabaseSetting.Type = val
-		}
 		if val, ok := paramsMap["Username"]; ok {
-			DatabaseSetting.User = val
+			settings.Database.User = val
 		}
 		if val, ok := paramsMap["Password"]; ok {
-			DatabaseSetting.Password = val
+			settings.Database.Password = val
 		}
 		if val, ok := paramsMap["Host"]; ok {
-			DatabaseSetting.Host = val
+			settings.Database.Host = val
 		}
 		if val, ok := paramsMap["Port"]; ok {
-			DatabaseSetting.Port = val
+			settings.Database.Port = val
 		}
 		if val, ok := paramsMap["DatabaseName"]; ok {
-			DatabaseSetting.Name = val
+			settings.Database.Name = val
 		}
 	}
-	ServerSetting.ReadTimeout = ServerSetting.ReadTimeout * time.Second
-	ServerSetting.WriteTimeout = ServerSetting.WriteTimeout * time.Second
+	settings.Server.ReadTimeout = settings.Server.ReadTimeout * time.Second
+	settings.Server.WriteTimeout = settings.Server.WriteTimeout * time.Second
+
+	return
 }
 
 /**

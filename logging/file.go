@@ -2,20 +2,19 @@ package logging
 
 import (
 	"fmt"
-	"mtgpoolservice/setting"
 	"time"
 )
 
 // getLogFilePath get the log file save path
-func getLogFilePath() string {
-	return fmt.Sprintf("%s%s", setting.AppSetting.RuntimeRootPath, setting.AppSetting.LogSavePath)
+func getLogFilePath(runtimeRootPath, logSavePath string) string {
+	return fmt.Sprintf("%s%s", runtimeRootPath, logSavePath)
 }
 
 // getLogFileName get the save name of the log file
-func getLogFileName() string {
+func getLogFileName(logSaveName, logTimeFormat, logFileExtension string) string {
 	return fmt.Sprintf("%s%s.%s",
-		setting.AppSetting.LogSaveName,
-		time.Now().Format(setting.AppSetting.TimeFormat),
-		setting.AppSetting.LogFileExt,
+		logSaveName,
+		time.Now().Format(logTimeFormat),
+		logFileExtension,
 	)
 }

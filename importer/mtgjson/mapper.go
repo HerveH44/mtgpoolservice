@@ -3,24 +3,26 @@ package mtgjson
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jinzhu/gorm/dialects/postgres"
-	"mtgpoolservice/models/entities"
+	"mtgpoolservice/db"
 	"mtgpoolservice/utils"
+	"regexp"
 	"strings"
 	"time"
+
+	"github.com/jinzhu/gorm/dialects/postgres"
 )
 
-func MapMTGJsonVersionToVersion(version Version) entities.Version {
+func MapMTGJsonVersionToVersion(version Version) db.Version {
 	date := time.Time(version.Data.Date)
-	v := entities.Version{
+	v := db.Version{
 		Date:            date,
 		SemanticVersion: version.Data.Version,
 	}
 	return v
 }
 
-func MapMTGJsonSetToEntity(mtgJsonSet MTGJsonSet, isCubable func(string, *Card) bool) entities.Set {
-	s := entities.Set{
+func MapMTGJsonSetToEntity(mtgJsonSet *MTGJsonSet, isCubable func(string, *Card) bool) *db.Set {
+	set := db.Set{
 		Code:               mtgJsonSet.Code,
 		Name:               mtgJsonSet.Name,
 		Type:               mtgJsonSet.Type,
@@ -30,7 +32,7 @@ func MapMTGJsonSetToEntity(mtgJsonSet MTGJsonSet, isCubable func(string, *Card) 
 		Sheets:             MakeSheets(mtgJsonSet.Code, mtgJsonSet.Booster.Default.Sheets),
 		PackConfigurations: MakePackConfigurations(mtgJsonSet.Booster.Default.Boosters),
 	}
-	return s
+	return &set
 }
 
 func MakePackConfigurations(configurations []PackConfiguration) postgres.Jsonb {
@@ -38,9 +40,9 @@ func MakePackConfigurations(configurations []PackConfiguration) postgres.Jsonb {
 	return postgres.Jsonb{RawMessage: jsonContent}
 }
 
-func MakeSheets(code string, sheets map[string]Sheet) (ret []entities.Sheet) {
+func MakeSheets(code string, sheets map[string]Sheet) (ret []db.Sheet) {
 	for name, sheet := range sheets {
-		sh := entities.Sheet{
+		sh := db.Sheet{
 			ID:            code + "_" + name,
 			SetID:         code,
 			Name:          name,
@@ -54,9 +56,9 @@ func MakeSheets(code string, sheets map[string]Sheet) (ret []entities.Sheet) {
 	return
 }
 
-func MakeSheetCards(sheetId string, cards SheetCards) (ret []entities.SheetCard) {
+func MakeSheetCards(sheetId string, cards SheetCards) (ret []db.SheetCard) {
 	for _, card := range cards {
-		sc := entities.SheetCard{
+		sc := db.SheetCard{
 			SheetID: sheetId,
 			UUID:    card.UUID,
 			Weight:  card.Weight,
@@ -66,35 +68,81 @@ func MakeSheetCards(sheetId string, cards SheetCards) (ret []entities.SheetCard)
 	return
 }
 
-func MakeCards(code string, cards []Card, isCubable func(string, *Card) bool) (ret []entities.Card) {
+func MakeCards(code string, cards []Card, isCubable func(string, *Card) bool) (ret []db.Card) {
 	for _, card := range cards {
 		if card.IsPromo || card.IsAlternative {
 			continue
 		}
 
-		mappedCard := entities.Card{
-			SetID:             code,
+		props := getDoubleFacedProps(&card, cards)
+
+		mappedCard := db.Card{
 			UUID:              card.UUID,
 			Name:              card.Name,
-			Number:            card.Number,
-			Layout:            card.Layout,
-			Loyalty:           card.Loyalty,
-			Power:             card.Power,
-			Toughness:         card.Toughness,
+			FaceName:          MakeFaceName(card.FaceName, card.Name),
+			Color:             GetColor(card.Colors),
+			SetID:             code,
 			ConvertedManaCost: int(card.ConvertedManaCost),
+			Number:            card.Number,
 			Type:              card.Types[0], //TODO: check if always true
 			ManaCost:          card.ManaCost,
 			Rarity:            GetRarity(&card),
+			URL:               fmt.Sprintf("https://api.scryfall.com/cards/%s?format=image", card.Identifiers.ScryfallID),
+			ScryfallID:        db.Identifier(card.Identifiers.ScryfallID),
+			Layout:            card.Layout,
+			IsDoubleFaced:     props.IsDoubleFace,
+			FlippedCardURL:    props.flippedCardURL,
+			FlippedIsBack:     props.flippedIsBack,
+			FlippedNumber:     props.flippedNumber,
+			Text:              card.Text,
+			Loyalty:           card.Loyalty,
+			Power:             card.Power,
+			Toughness:         card.Toughness,
 			Side:              card.Side,
 			IsAlternative:     card.IsAlternative,
-			Color:             GetColor(card.Colors),
-			ScryfallID:        card.Identifiers.ScryfallID,
-			URL:               fmt.Sprintf("https://api.scryfall.com/cards/%s?format=image", card.Identifiers.ScryfallID),
 			Cubable:           isCubable(code, &card),
-			FaceName:          MakeFaceName(card.FaceName, card.Name),
 		}
 
 		ret = append(ret, mappedCard)
+	}
+
+	return
+}
+
+type doubleFacedProps struct {
+	IsDoubleFace   bool
+	flippedCardURL string
+	flippedIsBack  bool
+	flippedNumber  string
+}
+
+func getDoubleFacedProps(c *Card, cards []Card) (props doubleFacedProps) {
+	props.IsDoubleFace = regexp.MustCompile("/^modal_dfc$|^double-faced$|^transform$|^flip$|^meld$|/").MatchString(c.Layout)
+	if !props.IsDoubleFace {
+		return
+	}
+	names := strings.Split(c.Name, " // ")
+	if len(names) < 2 {
+		return
+	}
+	for _, card := range cards {
+		if names[1] != card.FaceName {
+			continue
+		}
+
+		scryfallId := card.Identifiers.ScryfallID
+		props.flippedCardURL = fmt.Sprintf("https://api.scryfall.com/cards/%s?format=image", scryfallId)
+		if regexp.MustCompile("/^modal_dfc$|^double-faced$|^transform$|/").MatchString(c.Layout) {
+			props.flippedCardURL += "&face=back"
+			props.flippedNumber = card.Number
+			props.flippedIsBack = true
+		}
+
+		if regexp.MustCompile("^meld$").MatchString(c.Layout) {
+			props.flippedNumber = card.Number
+		}
+
+		break
 	}
 
 	return
