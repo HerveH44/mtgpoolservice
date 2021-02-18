@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"mtgpoolservice/db"
 	"mtgpoolservice/logging"
-	"mtgpoolservice/routers/api"
 	"regexp"
 	"runtime"
 	"sync"
@@ -18,10 +17,10 @@ import (
 )
 
 type Service interface {
-	CheckCubeList(req api.CubeListRequest) []string
+	CheckCubeList(list []string) []string
 	MakeRegularPacks(sets []string) (packs []*Pack, err error)
-	MakeCubePacks(req *api.CubeRequest) (packs []Pack, err error)
-	MakeChaosPacks(req *api.ChaosRequest) (packs []Pack, err error)
+	MakeCubePacks(list []string, packSize, packsNum int) (packs []Pack, err error)
+	MakeChaosPacks(modernOnly, totalChaos bool, packsNumber int) (packs []Pack, err error)
 }
 
 type RandomPackResult struct {
@@ -38,8 +37,8 @@ func NewPackService(setRepo db.SetRepository, cardRepo db.CardRepository) Servic
 	return &service{setRepo, cardRepo}
 }
 
-func (s *service) CheckCubeList(req api.CubeListRequest) []string {
-	_, missingCardNames := s.checkList(req.Cubelist[:])
+func (s *service) CheckCubeList(list []string) []string {
+	_, missingCardNames := s.checkList(list[:])
 	return missingCardNames
 }
 
@@ -176,16 +175,16 @@ func (s *service) makeRandomPack(sets []*db.Set) (ret RandomPackResult) {
 	return RandomPackResult{Pool: pack}
 }
 
-func (s *service) MakeCubePacks(req *api.CubeRequest) (packs []Pack, err error) {
-	cubeCards, missingCards := s.checkList(req.Cubelist)
+func (s *service) MakeCubePacks(list []string, packSize, packsNum int) (packs []Pack, err error) {
+	cubeCards, missingCards := s.checkList(list[:])
 	if len(missingCards) > 0 {
 		return nil, fmt.Errorf("unknown cards: %s", missingCards)
 	}
 
 	cubeCards.Shuffle()
-	for i := 0; i < int(req.Players)*int(req.Packs); i++ {
-		sliceLowerBound := i * int(req.PlayerPackSize)
-		sliceUpperBound := sliceLowerBound + int(req.PlayerPackSize)
+	for i := 0; i < packsNum; i++ {
+		sliceLowerBound := i * packSize
+		sliceUpperBound := sliceLowerBound + packSize
 		slicedList := cubeCards[sliceLowerBound:sliceUpperBound]
 
 		packs = append(packs, slicedList)
@@ -193,8 +192,8 @@ func (s *service) MakeCubePacks(req *api.CubeRequest) (packs []Pack, err error) 
 	return
 }
 
-func (s *service) MakeChaosPacks(req *api.ChaosRequest) (packs []Pack, err error) {
-	sets, err := s.setRepo.GetChaosSets(req.Modern)
+func (s *service) MakeChaosPacks(modernOnly, totalChaos bool, packsNumber int) (packs []Pack, err error) {
+	sets, err := s.setRepo.GetChaosSets(modernOnly)
 	if err != nil {
 		return
 	}
@@ -202,14 +201,14 @@ func (s *service) MakeChaosPacks(req *api.ChaosRequest) (packs []Pack, err error
 	numCPUs := runtime.NumCPU()
 	pool := tunny.NewFunc(numCPUs, func(payload interface{}) interface{} {
 		sets := payload.([]*db.Set)
-		if !req.TotalChaos {
+		if !totalChaos {
 			return s.makeRandomPack(sets)
 		}
 		return s.makeTotalChaosPack(sets)
 	})
 	defer pool.Close()
 
-	for i := 0; i < int(req.Players*req.Packs); i++ {
+	for i := 0; i < packsNumber; i++ {
 		result := pool.Process(sets).(RandomPackResult)
 		if result.Error != nil {
 			i--

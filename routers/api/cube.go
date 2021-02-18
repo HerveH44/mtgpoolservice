@@ -28,12 +28,12 @@ func (cc *cubeController) CubePacks(c *gin.Context) {
 		return
 	}
 
-	if int(req.PlayerPackSize)*int(req.Players)*int(req.Packs) > len(req.Cubelist) {
+	if req.PlayerPackSize*req.Players*req.Packs > len(req.Cubelist) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "cube list is too small"})
 		return
 	}
 
-	packs, err := cc.packService.MakeCubePacks(&req)
+	packs, err := cc.packService.MakeCubePacks(req.Cubelist[:], req.PlayerPackSize, req.Packs*req.Packs)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -48,7 +48,7 @@ func (cc *cubeController) CubeList(c *gin.Context) {
 		return
 	}
 
-	errs := cc.packService.CheckCubeList(request)
+	errs := cc.packService.CheckCubeList(request.Cubelist[:])
 	if len(errs) > 0 {
 		var errorMsg string
 		if len(errs) > 10 {
@@ -64,9 +64,9 @@ func (cc *cubeController) CubeList(c *gin.Context) {
 
 type CubeRequest struct {
 	Cubelist       []string `json:"list"`
-	Players        uint     `json:"players"`
-	PlayerPackSize uint     `json:"playerPackSize"`
-	Packs          uint     `json:"pool"`
+	Players        int      `json:"players"`
+	PlayerPackSize int      `json:"playerPackSize"`
+	Packs          int      `json:"pool"`
 }
 
 type CubeListRequest struct {

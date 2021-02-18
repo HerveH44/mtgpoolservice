@@ -1,12 +1,13 @@
 package setting
 
 import (
-	"github.com/go-ini/ini"
 	"log"
 	"os"
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/go-ini/ini"
 )
 
 type Settings struct {
@@ -57,7 +58,6 @@ func GetSettings() (settings Settings) {
 		log.Fatalf("setting.GetSettings, fail to parse 'conf/app.ini': %v", err)
 	}
 
-
 	mapTo("app", &settings.App)
 	mapTo("server", &settings.Server)
 	mapTo("database", &settings.Database)
@@ -87,6 +87,24 @@ func GetSettings() (settings Settings) {
 			settings.Database.Name = val
 		}
 	}
+
+	// AWS
+	if hostname, ok := os.LookupEnv("RDS_HOSTNAME"); ok {
+		settings.Database.Host = hostname
+	}
+	if port, ok := os.LookupEnv("RDS_PORT"); ok {
+		settings.Database.Port = port
+	}
+	if dbName, ok := os.LookupEnv("RDS_DB_NAME"); ok {
+		settings.Database.Name = dbName
+	}
+	if userName, ok := os.LookupEnv("RDS_USERNAME"); ok {
+		settings.Database.User = userName
+	}
+	if password, ok := os.LookupEnv("RDS_PASSWORD"); ok {
+		settings.Database.Password = password
+	}
+
 	settings.Server.ReadTimeout = settings.Server.ReadTimeout * time.Second
 	settings.Server.WriteTimeout = settings.Server.WriteTimeout * time.Second
 

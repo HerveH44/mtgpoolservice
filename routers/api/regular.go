@@ -28,7 +28,7 @@ func (r *regularController) RegularPacks(c *gin.Context) {
 		return
 	}
 
-	ret := make([]*Pack, 0)
+	ret := make([]*pack.Pack, 0)
 	if request.IsDraft {
 		for s := 0; s < len(request.Sets); s++ {
 			for p := 0; p < request.Players; p++ {

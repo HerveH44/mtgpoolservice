@@ -26,7 +26,7 @@ func (cc *chaosController) ChaosPacks(c *gin.Context) {
 		return
 	}
 
-	packs, err := cc.packService.MakeChaosPacks(&req)
+	packs, err := cc.packService.MakeChaosPacks(req.Modern, req.TotalChaos, req.Players*req.Packs)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -35,8 +35,8 @@ func (cc *chaosController) ChaosPacks(c *gin.Context) {
 }
 
 type ChaosRequest struct {
-	Players    uint `json:"players"`
-	Packs      uint `json:"pool"`
+	Players    int  `json:"players"`
+	Packs      int  `json:"pool"`
 	Modern     bool `json:"modern"`
 	TotalChaos bool `json:"totalChaos"`
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	database "mtgpoolservice/db"
 	"mtgpoolservice/importer"
 	"mtgpoolservice/importer/mtgjson"
@@ -14,8 +13,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron"
+
+	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
