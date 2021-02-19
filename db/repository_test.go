@@ -19,6 +19,8 @@ var mock sqlmock.Sqlmock
 const sqlSelectAll = `SELECT * FROM "sets"`
 const sqlLatest = `SELECT * FROM "sets" WHERE (type in ($1,$2)) AND (release_date <= now()) ORDER BY release_date DESC,"sets"."code" ASC LIMIT 1`
 const sqlFindSet = `SELECT * FROM "sets" WHERE ( code = $1) ORDER BY "sets"."code" ASC LIMIT 1`
+const sqlFindAllCardsInSet = `SELECT * FROM "cards"  WHERE ("set_id" IN ($1)) ORDER BY "cards"."uuid" ASC`
+const sqlFindAllSheets = `SELECT * FROM "sheets"  WHERE ("set_id" IN ($1)) ORDER BY "sheets"."id" ASC`
 
 var setColumns = []string{"code", "name", "type", "release_date", "base_set_size", "pack_configurations"}
 var basicSetValues = []driver.Value{basicSet.Code, basicSet.Name, basicSet.Type, basicSet.ReleaseDate, basicSet.BaseSetSize, basicSet.PackConfigurations}
@@ -111,14 +113,14 @@ func TestSetRepo_FindSet_whenSetIsFound_shouldReturnSet(t *testing.T) {
 	mock.ExpectQuery(regexp.QuoteMeta(sqlFindSet)).
 		WillReturnRows(sqlmock.NewRows(setColumns).
 			AddRow(basicSetValues...))
+	mock.ExpectQuery(regexp.QuoteMeta(sqlFindAllCardsInSet)).
+		WillReturnRows(sqlmock.NewRows(nil))
+	mock.ExpectQuery(regexp.QuoteMeta(sqlFindAllSheets)).
+		WillReturnRows(sqlmock.NewRows(nil))
 
-	latestSet, err := setRepo.FindLatestSet()
+	_, err := setRepo.FindSet(basicSet.Code)
 	if err != nil {
 		t.Error("FindSet should have not returned an error", err)
-	}
-
-	if !reflect.DeepEqual(*latestSet, basicSet) {
-		t.Error("FindAllSets returned an expected value", *latestSet, " should have been ", basicSet)
 	}
 }
 
