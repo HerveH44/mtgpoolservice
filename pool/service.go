@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"math/rand"
 	"mtgpoolservice/db"
-	"mtgpoolservice/logging"
 	"regexp"
 	"runtime"
 	"sync"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/google/uuid"
 

@@ -2,9 +2,10 @@ package db
 
 import (
 	"fmt"
-	"mtgpoolservice/logging"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/jinzhu/gorm"
 	"github.com/patrickmn/go-cache"
@@ -132,7 +133,7 @@ func (c *cardRepo) GetCardWithName(name string) (*Card, error) {
 
 	if err = query.First(card).Error; err != nil {
 		unknownCardCache.SetDefault(name, err)
-		logging.Debug("could not find card with name", name)
+		log.Debug("could not find card with name", name)
 	} else {
 		cardCache.SetDefault(name, card)
 	}
@@ -164,7 +165,7 @@ func (c *cardRepo) GetCardWithNameAndSetInfos(name, setCode, number string) (*Ca
 		Error
 
 	if err != nil {
-		logging.Debug("could not find card with name", name, "setCode", setCode, "and number", number)
+		log.Debug("could not find card with name", name, "setCode", setCode, "and number", number)
 	}
 	cardCache.SetDefault(cacheCardRepresentation, card)
 	return card, err

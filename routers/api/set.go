@@ -2,10 +2,11 @@ package api
 
 import (
 	database "mtgpoolservice/db"
-	"mtgpoolservice/logging"
 	"net/http"
 	"sort"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 	"github.com/patrickmn/go-cache"
@@ -38,20 +39,20 @@ func (s *setController) GetInfos(context *gin.Context) {
 
 	version, err := s.versionRepo.GetVersion()
 	if err != nil {
-		logging.Error(err)
+		log.Error(err)
 		context.JSON(500, gin.H{"error": "unexpected error"})
 	}
 
 	setMap, err := s.getAvailableSets()
 	if err != nil {
-		logging.Error(err)
+		log.Error(err)
 		context.JSON(500, gin.H{"error": "unexpected error"})
 		return
 	}
 
 	latestSet, err := s.getLatestSet()
 	if err != nil {
-		logging.Error(err)
+		log.Error(err)
 		context.JSON(500, gin.H{"error": "unexpected error"})
 		return
 	}
@@ -71,11 +72,11 @@ func (s *setController) GetInfos(context *gin.Context) {
 }
 
 func (s *setController) GetVersion(context *gin.Context) {
-	logging.Info("Getting version")
+	log.Info("Getting version")
 
 	version, err := s.versionRepo.GetVersion()
 	if err != nil {
-		logging.Error(err)
+		log.Error(err)
 		context.JSON(500, gin.H{"error": "unexpected error"})
 	}
 

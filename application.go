@@ -22,14 +22,11 @@ import (
 func main() {
 	var err error
 	settings := setting.GetSettings()
-	err = logging.Setup(settings.App)
-	if err != nil {
-		log.Fatalf("Could not initialize logger %s", err)
-	}
+	logging.Setup(settings.App)
 
 	db, err := database.ConnectDB(settings)
 	if err != nil {
-		logging.Fatal("Could not initialize DB %s", err)
+		log.Fatal("Could not initialize DB %s", err)
 	}
 
 	setRepository := database.NewSetRepository(db)
@@ -59,7 +56,7 @@ func main() {
 	scheduler := gocron.NewScheduler(time.UTC)
 	scheduler.Every(1).Day().Do(func() {
 		if updateError := importerFacade.UpdateSets(false); updateError != nil {
-			logging.Error("Could not update sets. Error", updateError)
+			log.Error("Could not update sets. Error", updateError)
 		}
 	})
 
@@ -71,7 +68,7 @@ func main() {
 		MaxHeaderBytes: maxHeaderBytes,
 	}
 
-	logging.Info("[info] start http server listening", endPoint)
+	log.Info("start http server listening", endPoint)
 
 	server.ListenAndServe()
 }

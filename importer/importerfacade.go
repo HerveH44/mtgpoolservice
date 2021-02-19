@@ -1,11 +1,11 @@
 package importer
 
 import (
-	"log"
 	"mtgpoolservice/db"
 	"mtgpoolservice/importer/mtgjson"
-	"mtgpoolservice/logging"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Facade interface {
@@ -29,7 +29,7 @@ func (i *importerFacade) UpdateSets(forceUpdate bool) error {
 			log.Println("Remote MTGJson version is same as db. Not updating")
 			return nil
 		}
-		logging.Info("Update Sets: Found new version", remoteVersion.Data.Version, remoteVersion.Data.Date)
+		log.Info("Update Sets: Found new version", remoteVersion.Data.Version, remoteVersion.Data.Date)
 	}
 
 	err := i.mtgjsonService.DownloadSets(i.onSet)
@@ -70,19 +70,19 @@ func (i *importerFacade) isNewVersion(version mtgjson.Version) bool {
 }
 
 func (i *importerFacade) onSet(set *mtgjson.MTGJsonSet, cubable mtgjson.IsCubable) {
-	logging.Debug("Mapping set", set.Code)
+	log.Debug("Mapping set", set.Code)
 	mappedSet := mtgjson.MapMTGJsonSetToEntity(set, cubable)
-	logging.Debug("Finished mapping set", set.Code)
+	log.Debug("Finished mapping set", set.Code)
 
 	if len(mappedSet.Cards) == 0 {
-		logging.Debug("Will not save empty set", set.Code)
+		log.Debug("Will not save empty set", set.Code)
 		return
 	}
 
 	if err := i.setRepository.SaveSet(mappedSet); err != nil {
-		logging.Debug("Could not save set", set.Code, err)
+		log.Debug("Could not save set", set.Code, err)
 	} else {
-		logging.Debug("Saved set", set.Code)
+		log.Debug("Saved set", set.Code)
 	}
 }
 

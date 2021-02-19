@@ -1,9 +1,10 @@
 package api
 
 import (
-	"mtgpoolservice/logging"
 	pack "mtgpoolservice/pool"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,34 +24,16 @@ func NewRegularController(service pack.Service) RegularController {
 func (r *regularController) RegularPacks(c *gin.Context) {
 	var request RegularRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
-		logging.Warn(err)
+		log.Warn(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	ret := make([]*pack.Pack, 0)
-	if request.IsDraft {
-		for s := 0; s < len(request.Sets); s++ {
-			for p := 0; p < request.Players; p++ {
-				packs, err := r.packsService.MakeRegularPacks(request.Sets[s : s+1])
-				if err != nil {
-					logging.Warn(err)
-					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-					return
-				}
-				ret = append(ret, packs...)
-			}
-		}
-	} else {
-		for p := 0; p < request.Players; p++ {
-			packs, err := r.packsService.MakeRegularPacks(request.Sets)
-			if err != nil {
-				logging.Warn(err)
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				return
-			}
-			ret = append(ret, packs...)
-		}
+	packs, err := r.packsService.MakeRegularPacks(request.Sets, request.Players)
+	if err != nil {
+		log.Warn(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, ret)
