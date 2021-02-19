@@ -17,16 +17,7 @@ type Settings struct {
 }
 
 type App struct {
-	PageSize  int
-	PrefixUrl string
-
-	RuntimeRootPath string
 	MTGJsonEndpoint string
-
-	LogSavePath string
-	LogSaveName string
-	LogFileExt  string
-	TimeFormat  string
 }
 
 type Server struct {
