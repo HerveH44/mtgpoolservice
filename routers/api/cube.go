@@ -66,7 +66,7 @@ type CubeRequest struct {
 	Cubelist       []string `json:"list"`
 	Players        int      `json:"players"`
 	PlayerPackSize int      `json:"playerPackSize"`
-	Packs          int      `json:"pool"`
+	Packs          int      `json:"packs"`
 }
 
 type CubeListRequest struct {
