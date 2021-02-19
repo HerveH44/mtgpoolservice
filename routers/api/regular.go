@@ -35,12 +35,10 @@ func (r *regularController) RegularPacks(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	c.JSON(http.StatusOK, ret)
+	c.JSON(http.StatusOK, packs)
 }
 
 type RegularRequest struct {
 	Players int      `json:"players"`
 	Sets    []string `json:"sets"`
-	IsDraft bool     `json:"isDraft,omitempty"`
 }

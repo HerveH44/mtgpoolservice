@@ -19,13 +19,13 @@ import (
 
 type Service interface {
 	CheckCubeList(list []string) []string
-	MakeRegularPacks(sets []string) (packs []*Pack, err error)
-	MakeCubePacks(list []string, packSize, packsNum int) (packs []Pack, err error)
+	MakeRegularPacks(sets []string, packsNumber int) (packs []Pack, err error)
+	MakeCubePacks(list []string, packSize, packsNumber int) (packs []Pack, err error)
 	MakeChaosPacks(modernOnly, totalChaos bool, packsNumber int) (packs []Pack, err error)
 }
 
 type RandomPackResult struct {
-	Pool  *Pack
+	Pool  Pack
 	Error error
 }
 
@@ -43,30 +43,48 @@ func (s *service) CheckCubeList(list []string) []string {
 	return missingCardNames
 }
 
-func (s *service) MakeRegularPacks(sets []string) (packs []*Pack, err error) {
-	for i := 0; i < len(sets); i++ {
-		setCode := sets[i]
-
-		set, err := s.setRepo.FindSet(setCode)
+func (s *service) MakeRegularPacks(sets []string, packsNum int) (packs []Pack, err error) {
+	for _, setCode := range sets {
+		set, err := s.getSet(setCode)
 		if err != nil {
-			fmt.Println(err)
-			logging.Warn(err)
-			return nil, errors.New("set " + setCode + "does not exist")
+			return nil, err
 		}
 
-		pack, err := s.makeRegularPack(set)
-		if err != nil {
-			fmt.Println(err)
-			logging.Warn(err)
-			return nil, errors.New("could not produce pack for " + setCode)
-		}
+		for i := 0; i < packsNum; i++ {
+			pack, err := s.makeRegularPack(set)
+			if err != nil {
+				log.Warn(err)
+				return nil, errors.New("could not produce pack for " + set.Code)
+			}
 
-		packs = append(packs, pack)
+			packs = append(packs, pack)
+		}
 	}
 	return
 }
 
-func (s *service) makeRegularPack(set *db.Set) (*Pack, error) {
+func (s *service) getSet(setCode string) (*db.Set, error) {
+	var (
+		set *db.Set
+		err error
+	)
+	if setCode == "RNG" {
+		set, err = s.setRepo.GetRandomSet()
+		if err != nil {
+			log.Warn(err)
+			return nil, errors.New("server error: could not produce random set")
+		}
+	} else {
+		set, err = s.setRepo.FindSet(setCode)
+		if err != nil {
+			log.Warn(err)
+			return nil, errors.New("set " + setCode + "does not exist")
+		}
+	}
+	return set, err
+}
+
+func (s *service) makeRegularPack(set *db.Set) (Pack, error) {
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	configuration, err := set.GetRandomConfiguration()
@@ -85,16 +103,10 @@ func (s *service) makeRegularPack(set *db.Set) (*Pack, error) {
 		protoCards = append(protoCards, randomCards...)
 	}
 
-	cards, err := getCards(set, protoCards)
-	if err != nil {
-		return nil, err
-	}
-
-	return &cards, nil
+	return getCards(set, protoCards)
 }
 
-func (s *service) makeDefaultPack(set *db.Set) (cards *Pack, err error) {
-	cards = &Pack{}
+func (s *service) makeDefaultPack(set *db.Set) (cards Pack, err error) {
 	rares, err := s.cardRepo.GetCardsWithRarity(set.Code, "Rare", 1)
 	if err != nil {
 		return nil, err
@@ -108,9 +120,9 @@ func (s *service) makeDefaultPack(set *db.Set) (cards *Pack, err error) {
 		return nil, err
 	}
 
-	cards.AddCards(rares)
-	cards.AddCards(unco)
-	cards.AddCards(commons)
+	cards.AddCards(rares).
+		AddCards(unco).
+		AddCards(commons)
 	return
 }
 
@@ -148,7 +160,7 @@ func (s *service) makeTotalChaosPack(sets []*db.Set) interface{} {
 	pack.AddCards(rares)
 	pack.AddCards(unco)
 	pack.AddCards(common)
-	return RandomPackResult{Pool: &pack}
+	return RandomPackResult{Pool: pack}
 }
 
 func (s *service) getRandomCards(sets []*db.Set, number int, rarity string) ([]*db.Card, error) {
@@ -215,7 +227,7 @@ func (s *service) MakeChaosPacks(modernOnly, totalChaos bool, packsNumber int) (
 			i--
 			continue
 		}
-		packs = append(packs, *result.Pool)
+		packs = append(packs, result.Pool)
 	}
 
 	return
@@ -303,8 +315,9 @@ func (c *Pack) Add(card *db.Card, isFoil bool) {
 	*c = append(*c, cardResponse)
 }
 
-func (c *Pack) AddCards(cards []*db.Card) {
+func (c *Pack) AddCards(cards []*db.Card) *Pack {
 	for _, card := range cards {
 		c.Add(card, false)
 	}
+	return c
 }
