@@ -15,6 +15,7 @@ import (
 
 type SetRepository interface {
 	SaveSet(set *Set) error
+	GetRandomSet() (*Set, error)
 	FindSet(setCode string) (*Set, error)
 	FindAllSets() ([]*Set, error)
 	FindLatestSet() (*Set, error)
@@ -51,6 +52,17 @@ func (s *setRepo) GetChaosSets(modernOnly bool) (chaosSets []*Set, err error) {
 
 func (s *setRepo) SaveSet(set *Set) error {
 	return s.db.Save(set).Error
+}
+
+func (s *setRepo) GetRandomSet() (*Set, error) {
+	var set = new(Set)
+
+	err := s.db.
+		Order("random()").
+		Set("gorm:auto_preload", true).
+		First(set).
+		Error
+	return set, err
 }
 
 func (s *setRepo) FindSet(setCode string) (*Set, error) {
