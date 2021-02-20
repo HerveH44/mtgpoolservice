@@ -9,7 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Opening a database and save the reference to `Database` struct.
 func ConnectDB(settings setting.Settings) (db *gorm.DB, err error) {
 	db, err = gorm.Open("postgres", fmt.Sprintf(
 		"host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
