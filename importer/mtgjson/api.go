@@ -42,10 +42,10 @@ type Version struct {
 
 /**
 Représentation de l'api MTGJson
-comme on trouve dans /api/v5/AllPrintings.json
+comme on trouve dans /api/v5/allprintings.json
 */
-type AllPrintings struct {
-	Data map[string]MTGJsonSet `json:"data"`
+type MTGJsonSets struct {
+	Sets map[string]MTGJsonSet `json:"data"`
 	Meta Meta                  `json:"meta"`
 }
 

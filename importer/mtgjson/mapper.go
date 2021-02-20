@@ -12,11 +12,11 @@ import (
 	"github.com/jinzhu/gorm/dialects/postgres"
 )
 
-func MapMTGJsonVersionToVersion(version Version) db.Version {
-	date := time.Time(version.Data.Date)
+func MapMTGJsonVersionToVersion(version Meta) db.Version {
+	date := time.Time(version.Date)
 	v := db.Version{
 		Date:            date,
-		SemanticVersion: version.Data.Version,
+		SemanticVersion: version.Version,
 	}
 	return v
 }

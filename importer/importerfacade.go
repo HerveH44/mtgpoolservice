@@ -30,7 +30,7 @@ func (i *importerFacade) UpdateSets(forceUpdate bool) error {
 			log.Println("Remote MTGJson version is same as db. Not updating")
 			return nil
 		}
-		log.Info("Update Sets: Found new version", remoteVersion.Data.Version, remoteVersion.Data.Date)
+		log.Info("Update Sets: Found new version ", remoteVersion.Data.Version, remoteVersion.Data.Date)
 	}
 
 	sets, err := i.mtgjsonService.DownloadSets()
@@ -38,17 +38,12 @@ func (i *importerFacade) UpdateSets(forceUpdate bool) error {
 		return err
 	}
 
-	err = i.importSets(sets)
-	if err != nil {
-		return err
-	}
-	remoteVersion, err := i.mtgjsonService.DownloadVersion()
+	err = i.importSets(sets.Sets)
 	if err != nil {
 		return err
 	}
 
-	//TODO: we should have all this inside one transaction (if fail, I should rollback everything?)
-	version := mtgjson.MapMTGJsonVersionToVersion(remoteVersion)
+	version := mtgjson.MapMTGJsonVersionToVersion(sets.Meta)
 	return i.versionRepository.SaveVersion(version)
 }
 

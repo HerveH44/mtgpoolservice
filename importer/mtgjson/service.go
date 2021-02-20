@@ -11,7 +11,7 @@ import (
 
 type MTGJsonService interface {
 	DownloadVersion() (Version, error)
-	DownloadSets() (map[string]MTGJsonSet, error)
+	DownloadSets() (*MTGJsonSets, error)
 	DownloadSet(setCode string) (*MTGJsonSet, error)
 }
 
@@ -57,21 +57,21 @@ func (m *mtgJsonService) DownloadSet(setCode string) (*MTGJsonSet, error) {
 	return &monoSet.Data, nil
 }
 
-func (m *mtgJsonService) DownloadSets() (map[string]MTGJsonSet, error) {
+func (m *mtgJsonService) DownloadSets() (*MTGJsonSets, error) {
 	log.Info("Refreshing sets")
-	resp, err := http.Get(m.endpoint + "AllPrintings.json")
+	resp, err := http.Get(m.endpoint + "MTGJsonSets.json")
 	if err != nil {
-		log.Error("Could not fetch the MTGJson allPrintings")
+		log.Error("Could not fetch the MTGJson sets")
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	allPrintings := new(AllPrintings)
-	if err := json.NewDecoder(resp.Body).Decode(allPrintings); err != nil {
-		log.Error("error while unmarshalling allPrintings", err)
+	sets := new(MTGJsonSets)
+	if err := json.NewDecoder(resp.Body).Decode(sets); err != nil {
+		log.Error("error while unmarshalling sets", err)
 		return nil, err
 	}
-	var setsNumber = len(allPrintings.Data)
+	var setsNumber = len(sets.Sets)
 	log.Debug(setsNumber, " sets found")
-	return allPrintings.Data, nil
+	return sets, nil
 }
