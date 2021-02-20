@@ -1,8 +1,7 @@
-package api
+package db
 
 import (
-	database "mtgpoolservice/db"
-	"net/http"
+	"mtgpoolservice/routers"
 	"sort"
 	"time"
 
@@ -12,27 +11,26 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-type SetController interface {
-	GetAvailableSets(context *gin.Context)
-	GetLatestSet(context *gin.Context)
-	GetInfos(context *gin.Context)
-	GetVersion(context *gin.Context)
-}
+const getInfosKey = "__infos__"
 
-type setController struct {
-	setRepo     database.SetRepository
-	versionRepo database.VersionRepository
+var playableSetTypes = []string{"core", "expansion", "draft_innovation", "funny", "starter", "masters"}
+
+type dbController struct {
+	setRepo     SetRepository
+	versionRepo VersionRepository
 	cache       *cache.Cache
 }
 
-var getInfosKey = "__infos__"
-
-func NewSetController(setRepository database.SetRepository, versionRepository database.VersionRepository) SetController {
-	setControllerCache := cache.New(6*time.Hour, 1*time.Hour)
-	return &setController{setRepository, versionRepository, setControllerCache}
+func (s *dbController) Register(router *gin.RouterGroup) {
+	router.GET("", s.getInfos)
 }
 
-func (s *setController) GetInfos(context *gin.Context) {
+func NewDBController(setRepository SetRepository, versionRepository VersionRepository) routers.Controller {
+	setControllerCache := cache.New(6*time.Hour, 1*time.Hour)
+	return &dbController{setRepository, versionRepository, setControllerCache}
+}
+
+func (s *dbController) getInfos(context *gin.Context) {
 	if cachedInfos, found := s.cache.Get(getInfosKey); found {
 		context.JSON(200, cachedInfos)
 	}
@@ -72,44 +70,7 @@ func (s *setController) GetInfos(context *gin.Context) {
 	context.JSON(200, response)
 }
 
-func (s *setController) GetVersion(context *gin.Context) {
-	log.Info("Getting version")
-
-	version, err := s.versionRepo.GetVersion()
-	if err != nil {
-		log.Error(err)
-		context.JSON(500, gin.H{"error": "unexpected error"})
-	}
-
-	response := VersionResponse{
-		Date:    version.Date.Format("2006-01-02"),
-		Version: version.SemanticVersion,
-	}
-
-	context.JSON(200, response)
-}
-
-func (s *setController) GetAvailableSets(context *gin.Context) {
-	setMap, err := s.getAvailableSets()
-	if err != nil {
-		context.JSON(500, gin.H{"error": "unexpected error"})
-		return
-	}
-
-	context.JSON(http.StatusOK, setMap)
-}
-
-func (s *setController) GetLatestSet(context *gin.Context) {
-	latestSet, err := s.getLatestSet()
-	if err != nil {
-		context.JSON(500, gin.H{"error": "unexpected error"})
-		return
-	}
-
-	context.JSON(http.StatusOK, latestSet)
-}
-
-func (s *setController) getAvailableSets() (AvailableSetsMap, error) {
+func (s *dbController) getAvailableSets() (AvailableSetsMap, error) {
 	sets, err := s.setRepo.FindAllSets()
 	if err != nil {
 		return nil, err
@@ -117,7 +78,7 @@ func (s *setController) getAvailableSets() (AvailableSetsMap, error) {
 	return buildAvailableSetsMap(sets), nil
 }
 
-func (s *setController) getLatestSet() (LatestSetResponse, error) {
+func (s *dbController) getLatestSet() (LatestSetResponse, error) {
 	latestSet, err := s.setRepo.FindLatestSet()
 	if err != nil {
 		return LatestSetResponse{}, err
@@ -132,7 +93,7 @@ func (s *setController) getLatestSet() (LatestSetResponse, error) {
 	}, nil
 }
 
-func buildAvailableSetsMap(sets []*database.Set) AvailableSetsMap {
+func buildAvailableSetsMap(sets []*Set) AvailableSetsMap {
 	setMap := setupSetsMap()
 
 	for _, set := range sets {
@@ -164,8 +125,6 @@ func setupSetsMap() (setMap AvailableSetsMap) {
 
 	return setMap
 }
-
-var playableSetTypes = []string{"core", "expansion", "draft_innovation", "funny", "starter", "masters"}
 
 type LatestSetResponse struct {
 	SetResponse

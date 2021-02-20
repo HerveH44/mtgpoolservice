@@ -18,6 +18,7 @@ type Settings struct {
 
 type App struct {
 	MTGJsonEndpoint string
+	AdminPassword   string
 }
 
 type Server struct {
@@ -77,6 +78,11 @@ func GetSettings() (settings Settings) {
 		if val, ok := paramsMap["DatabaseName"]; ok {
 			settings.Database.Name = val
 		}
+	}
+
+	// basic auth settings
+	if password, ok := os.LookupEnv("ADMIN_PWD"); ok {
+		settings.App.AdminPassword = password
 	}
 
 	// AWS

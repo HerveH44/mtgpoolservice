@@ -4,31 +4,26 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
-	"mtgpoolservice/routers/api"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
 
-func InitRouter(regularPacksController api.RegularController, setController api.SetController, importerController api.ImporterController, cubeController api.CubeController, chaosController api.ChaosController) *gin.Engine {
+type Controller interface {
+	Register(router *gin.RouterGroup)
+}
+
+func InitRouter() *gin.Engine {
 	r := gin.Default()
 	r.Use(RequestLoggerMiddleware())
-
-	r.GET("/ping", api.Ping)
-
-	r.GET("/infos", setController.GetInfos)
-	r.GET("/sets", setController.GetAvailableSets)
-	r.GET("/sets/latest", setController.GetLatestSet)
-	r.GET("/about", setController.GetVersion)
-
-	r.GET("/import", importerController.ImportAllSets)
-
-	r.POST("/regular", regularPacksController.RegularPacks)
-	r.POST("/chaos", chaosController.ChaosPacks)
-	r.POST("/cube", cubeController.CubePacks)
-	r.POST("/cubelist", cubeController.CubeList)
-
+	r.GET("/ping", Ping)
 	return r
+}
+
+func Ping(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"message": "pong",
+	})
 }
 
 func RequestLoggerMiddleware() gin.HandlerFunc {

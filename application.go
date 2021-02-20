@@ -8,7 +8,6 @@ import (
 	"mtgpoolservice/logging"
 	"mtgpoolservice/pool"
 	"mtgpoolservice/routers"
-	"mtgpoolservice/routers/api"
 	"mtgpoolservice/setting"
 	"net/http"
 	"time"
@@ -36,14 +35,17 @@ func main() {
 	packService := pool.NewPackService(setRepository, cardRepository)
 	mtgJsonService := mtgjson.NewMTGJsonService(settings.MTGJsonEndpoint)
 	importerFacade := importer.NewImporterFacade(mtgJsonService, setRepository, versionRepository)
+	router := routers.InitRouter()
 
-	regularPackController := api.NewRegularController(packService)
-	setController := api.NewSetController(setRepository, versionRepository)
-	importerController := api.NewImporterController(importerFacade)
-	cubeController := api.NewCubeController(packService)
-	chaosController := api.NewChaosController(packService)
-
-	routersInit := routers.InitRouter(regularPackController, setController, importerController, cubeController, chaosController)
+	importer.
+		NewImporterController(importerFacade).
+		Register(router.Group("/import", gin.BasicAuth(gin.Accounts{"admin": settings.AdminPassword})))
+	database.
+		NewDBController(setRepository, versionRepository).
+		Register(router.Group("/infos"))
+	pool.
+		NewPoolController(packService).
+		Register(router.Group("/pool"))
 
 	gin.SetMode(settings.Server.RunMode)
 	readTimeout := settings.Server.ReadTimeout
@@ -62,7 +64,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:           endPoint,
-		Handler:        routersInit,
+		Handler:        router,
 		ReadTimeout:    readTimeout,
 		WriteTimeout:   writeTimeout,
 		MaxHeaderBytes: maxHeaderBytes,
