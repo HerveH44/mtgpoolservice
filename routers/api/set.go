@@ -40,20 +40,21 @@ func (s *setController) GetInfos(context *gin.Context) {
 	version, err := s.versionRepo.GetVersion()
 	if err != nil {
 		log.Error(err)
-		context.JSON(500, gin.H{"error": "unexpected error"})
+		context.JSON(500, gin.H{"error": "unexpected error while fetching infos about version"})
+		return
 	}
 
 	setMap, err := s.getAvailableSets()
 	if err != nil {
 		log.Error(err)
-		context.JSON(500, gin.H{"error": "unexpected error"})
+		context.JSON(500, gin.H{"error": "unexpected error while fetching available sets"})
 		return
 	}
 
 	latestSet, err := s.getLatestSet()
 	if err != nil {
 		log.Error(err)
-		context.JSON(500, gin.H{"error": "unexpected error"})
+		context.JSON(500, gin.H{"error": "unexpected error while fetching latest set"})
 		return
 	}
 
@@ -61,7 +62,7 @@ func (s *setController) GetInfos(context *gin.Context) {
 		AvailableSetsMap:  setMap,
 		LatestSetResponse: latestSet,
 		MTGJsonVersion: VersionResponse{
-			Date:    version.Date.Format(time.ANSIC),
+			Date:    version.Date.Format("2006-01-02"),
 			Version: version.SemanticVersion,
 		},
 		BoosterRulesVersion: version.SemanticVersion,
