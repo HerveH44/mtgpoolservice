@@ -22,7 +22,6 @@ func InitRouter(regularPacksController api.RegularController, setController api.
 	r.GET("/about", setController.GetVersion)
 
 	r.GET("/import", importerController.ImportAllSets)
-	r.GET("/import/:setCode", importerController.ImportSet)
 
 	r.POST("/regular", regularPacksController.RegularPacks)
 	r.POST("/chaos", chaosController.ChaosPacks)

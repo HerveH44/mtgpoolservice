@@ -6,20 +6,21 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	_ "gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
-	"github.com/jinzhu/gorm"
 	"github.com/patrickmn/go-cache"
 )
 
 // SET REPO //
 
 type SetRepository interface {
-	SaveSet(set *Set) error
 	GetRandomSet() (*Set, error)
 	FindSet(setCode string) (*Set, error)
 	FindAllSets() ([]*Set, error)
 	FindLatestSet() (*Set, error)
 	GetChaosSets(modernOnly bool) ([]*Set, error)
+	SaveSets(sets *[]Set) error
 }
 
 type setRepo struct {
@@ -50,8 +51,14 @@ func (s *setRepo) GetChaosSets(modernOnly bool) (chaosSets []*Set, err error) {
 	return chaosSets, nil
 }
 
-func (s *setRepo) SaveSet(set *Set) error {
-	return s.db.Save(set).Error
+func (s *setRepo) SaveSets(sets *[]Set) error {
+	log.Info("starting saving sets")
+	//for _, set := range *sets {
+	//	s.db.Create(&set)
+	//}
+	s.db.CreateInBatches(sets, 1)
+	log.Info("finished saving sets")
+	return nil
 }
 
 func (s *setRepo) GetRandomSet() (*Set, error) {
@@ -220,5 +227,5 @@ func (vr *versionRepository) GetVersion() (v Version, err error) {
 }
 
 func (vr *versionRepository) SaveVersion(version Version) (err error) {
-	return vr.db.Save(&version).Error
+	return vr.db.Create(&version).Error
 }

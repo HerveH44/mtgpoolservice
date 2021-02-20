@@ -4,28 +4,41 @@ import (
 	"fmt"
 	"mtgpoolservice/setting"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-	log "github.com/sirupsen/logrus"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 func ConnectDB(settings setting.Settings) (db *gorm.DB, err error) {
-	db, err = gorm.Open("postgres", fmt.Sprintf(
+	db, err = gorm.Open(postgres.Open(fmt.Sprintf(
 		"host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
 		settings.Database.Host,
 		settings.Database.Port,
 		settings.Database.User,
 		settings.Database.Name,
 		settings.Database.Password,
-		settings.Database.SslMode))
+		settings.Database.SslMode)), &gorm.Config{
+		SkipDefaultTransaction:                   false,
+		NamingStrategy:                           nil,
+		FullSaveAssociations:                     false,
+		Logger:                                   nil,
+		NowFunc:                                  nil,
+		DryRun:                                   false,
+		PrepareStmt:                              false,
+		DisableAutomaticPing:                     false,
+		DisableForeignKeyConstraintWhenMigrating: false,
+		DisableNestedTransaction:                 false,
+		AllowGlobalUpdate:                        false,
+		QueryFields:                              false,
+		CreateBatchSize:                          0,
+		ClauseBuilders:                           nil,
+		ConnPool:                                 nil,
+		Dialector:                                nil,
+		Plugins:                                  nil,
+	})
 
 	if err != nil {
 		return nil, err
 	}
-
-	db.DB().SetMaxIdleConns(10)
-	db.LogMode(settings.Database.Log)
-	db.SetLogger(log.New())
 
 	db.AutoMigrate(&Set{})
 	db.AutoMigrate(&Card{})

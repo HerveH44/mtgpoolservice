@@ -3,6 +3,8 @@ package importer
 import (
 	"mtgpoolservice/db"
 	"mtgpoolservice/importer/mtgjson"
+	"mtgpoolservice/utils"
+	"sort"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -10,7 +12,6 @@ import (
 
 type Facade interface {
 	UpdateSets(force bool) error
-	UpdateSet(code string) error
 }
 
 type importerFacade struct {
@@ -32,11 +33,15 @@ func (i *importerFacade) UpdateSets(forceUpdate bool) error {
 		log.Info("Update Sets: Found new version", remoteVersion.Data.Version, remoteVersion.Data.Date)
 	}
 
-	err := i.mtgjsonService.DownloadSets(i.onSet)
+	sets, err := i.mtgjsonService.DownloadSets()
 	if err != nil {
 		return err
 	}
 
+	err = i.importSets(sets)
+	if err != nil {
+		return err
+	}
 	remoteVersion, err := i.mtgjsonService.DownloadVersion()
 	if err != nil {
 		return err
@@ -45,19 +50,6 @@ func (i *importerFacade) UpdateSets(forceUpdate bool) error {
 	//TODO: we should have all this inside one transaction (if fail, I should rollback everything?)
 	version := mtgjson.MapMTGJsonVersionToVersion(remoteVersion)
 	return i.versionRepository.SaveVersion(version)
-}
-
-func (i *importerFacade) UpdateSet(code string) error {
-	mtgJsonSet, err := i.mtgjsonService.DownloadSet(code)
-	if err != nil {
-		return err
-	}
-	set := mtgjson.MapMTGJsonSetToEntity(mtgJsonSet, notCubableFunc)
-	return i.setRepository.SaveSet(set)
-}
-
-func notCubableFunc(string, *mtgjson.Card) bool {
-	return false
 }
 
 func (i *importerFacade) isNewVersion(version mtgjson.Version) bool {
@@ -69,21 +61,80 @@ func (i *importerFacade) isNewVersion(version mtgjson.Version) bool {
 	return isNewVersion(version, getVersion)
 }
 
-func (i *importerFacade) onSet(set *mtgjson.MTGJsonSet, cubable mtgjson.IsCubable) {
-	log.Debug("Mapping set", set.Code)
-	mappedSet := mtgjson.MapMTGJsonSetToEntity(set, cubable)
-	log.Debug("Finished mapping set", set.Code)
+func (i *importerFacade) importSets(sets map[string]mtgjson.MTGJsonSet) error {
+	ordereredSetsCode := orderSetsByDate(&sets)
+	isCubable := buildIsCubableFunc(ordereredSetsCode)
 
-	if len(mappedSet.Cards) == 0 {
-		log.Debug("Will not save empty set", set.Code)
-		return
+	var mappedSets = make([]db.Set, 0)
+
+	for _, set := range sets {
+		log.Debug("Mapping set ", set.Code)
+		mappedSet := mtgjson.MapMTGJsonSetToEntity(&set, isCubable)
+		log.Debug("Finished mapping set ", set.Code)
+
+		if len(mappedSet.Cards) == 0 {
+			log.Debug("Not saving empty set ", set.Code)
+		} else {
+			mappedSets = append(mappedSets, *mappedSet)
+		}
 	}
 
-	if err := i.setRepository.SaveSet(mappedSet); err != nil {
-		log.Debug("Could not save set", set.Code, err)
-	} else {
-		log.Debug("Saved set", set.Code)
+	return i.setRepository.SaveSets(&mappedSets)
+}
+
+func buildIsCubableFunc(orderedSetCodes map[string]int) func(string, *mtgjson.Card) bool {
+	return func(setCode string, card *mtgjson.Card) bool {
+		if len(card.Variations) > 0 && (card.BorderColor == "borderless" || card.IsStarter || utils.Include(card.FrameEffects, "extendedart")) {
+			return false
+		}
+		printings := card.Printings
+		if len(printings) < 2 {
+			return true
+		}
+
+		sort.SliceStable(printings, func(i, j int) bool {
+			setCode1 := printings[i]
+			setCode2 := printings[j]
+			set1Index, ok := orderedSetCodes[setCode1]
+			if !ok {
+				return false
+			}
+			set2Index, ok := orderedSetCodes[setCode2]
+			if !ok {
+				return true
+			}
+			return set1Index < set2Index
+		})
+
+		if setCode == printings[0] {
+			return true
+		}
+
+		return false
 	}
+}
+
+var notCubableSetTypes = []string{"box", "duel_deck", "masterpiece", "memorabilia", "promo", "spellbook"}
+
+func orderSetsByDate(m *map[string]mtgjson.MTGJsonSet) map[string]int {
+	r := make([]string, 0)
+	for setCode, set := range *m {
+		if !utils.Include(notCubableSetTypes, set.Type) {
+			r = append(r, setCode)
+		}
+	}
+	myMap := *m
+	sort.SliceStable(r, func(i, j int) bool {
+		releaseDate1 := myMap[r[i]].ReleaseDate
+		releaseDate2 := myMap[r[j]].ReleaseDate
+		return releaseDate1.Before(&releaseDate2)
+	})
+
+	ret := make(map[string]int)
+	for i, code := range r {
+		ret[code] = i
+	}
+	return ret
 }
 
 func isNewVersion(remoteVersion mtgjson.Version, savedVersion db.Version) bool {
