@@ -26,7 +26,7 @@ func main() {
 
 	db, err := database.ConnectDB(settings)
 	if err != nil {
-		log.Fatal("Could not initialize DB", err)
+		log.Fatal("Could not initialize DB ", err)
 	}
 
 	setRepository := database.NewSetRepository(db)
