@@ -11,8 +11,6 @@ import (
 	"github.com/patrickmn/go-cache"
 )
 
-const getInfosKey = "__infos__"
-
 var playableSetTypes = []string{"core", "expansion", "draft_innovation", "funny", "starter", "masters"}
 
 type dbController struct {
@@ -31,10 +29,6 @@ func NewDBController(setRepository SetRepository, versionRepository VersionRepos
 }
 
 func (s *dbController) getInfos(context *gin.Context) {
-	if cachedInfos, found := s.cache.Get(getInfosKey); found {
-		context.JSON(200, cachedInfos)
-	}
-
 	version, err := s.versionRepo.GetVersion()
 	if err != nil {
 		log.Error(err)
@@ -65,8 +59,6 @@ func (s *dbController) getInfos(context *gin.Context) {
 		},
 		BoosterRulesVersion: version.SemanticVersion,
 	}
-	s.cache.SetDefault(getInfosKey, response)
-
 	context.JSON(200, response)
 }
 
