@@ -31,7 +31,7 @@ package db
 //	Type:               "TYPE",
 //	ReleaseDate:        time.Now(),
 //	BaseSetSize:        0,
-//	Cards:              nil,
+//	SheetCards:              nil,
 //	Sheets:             nil,
 //	PackConfigurations: postgres.Jsonb{},
 //}

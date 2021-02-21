@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"mtgpoolservice/setting"
 
+	"gorm.io/gorm/logger"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -20,7 +22,7 @@ func ConnectDB(settings setting.Settings) (db *gorm.DB, err error) {
 		SkipDefaultTransaction:                   false,
 		NamingStrategy:                           nil,
 		FullSaveAssociations:                     false,
-		Logger:                                   nil,
+		Logger:                                   logger.Default.LogMode(logger.Info),
 		NowFunc:                                  nil,
 		DryRun:                                   false,
 		PrepareStmt:                              false,

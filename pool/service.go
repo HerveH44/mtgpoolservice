@@ -18,10 +18,12 @@ import (
 )
 
 type Service interface {
-	CheckCubeList(list []string) []string
-	MakeRegularPacks(sets []string, packsNumber int) (packs []Pack, err error)
-	MakeCubePacks(list []string, packSize, packsNumber int) (packs []Pack, err error)
-	MakeChaosPacks(modernOnly, totalChaos bool, packsNumber int) (packs []Pack, err error)
+	checkCubeList(list []string) []string
+	regularDraft(sets []string, playersNumber int) (packs []Pack, err error)
+	regularSealed(sets []string, playersNumber int) (packs []Pack, err error)
+	cubePacks(list []string, packSize, packsNumber int) (packs []Pack, err error)
+	chaosDraft(modernOnly, totalChaos bool, packsNumber int) (packs []Pack, err error)
+	chaosSealed(modernOnly, totalChaos bool, packsNumber, playersNumber int) (packs []Pack, err error)
 }
 
 type RandomPackResult struct {
@@ -38,19 +40,19 @@ func NewPackService(setRepo db.SetRepository, cardRepo db.CardRepository) Servic
 	return &service{setRepo, cardRepo}
 }
 
-func (s *service) CheckCubeList(list []string) []string {
+func (s *service) checkCubeList(list []string) []string {
 	_, missingCardNames := s.checkList(list[:])
 	return missingCardNames
 }
 
-func (s *service) MakeRegularPacks(sets []string, packsNum int) (packs []Pack, err error) {
+func (s *service) regularDraft(sets []string, playersNumber int) (packs []Pack, err error) {
 	for _, setCode := range sets {
 		set, err := s.getSet(setCode)
 		if err != nil {
 			return nil, err
 		}
 
-		for i := 0; i < packsNum; i++ {
+		for i := 0; i < playersNumber; i++ {
 			pack, err := s.makeRegularPack(set)
 			if err != nil {
 				log.Warn(err)
@@ -59,6 +61,32 @@ func (s *service) MakeRegularPacks(sets []string, packsNum int) (packs []Pack, e
 
 			packs = append(packs, pack)
 		}
+	}
+	return
+}
+
+func (s *service) regularSealed(setCodes []string, players int) (pools []Pack, err error) {
+	var sets = make([]*db.Set, 0)
+
+	for _, setCode := range setCodes {
+		set, err := s.getSet(setCode)
+		if err != nil {
+			return nil, err
+		}
+		sets = append(sets, set)
+	}
+
+	for i := 0; i < players; i++ {
+		pool := Pack{}
+		for _, set := range sets {
+			pack, err := s.makeRegularPack(set)
+			if err != nil {
+				log.Warn(err)
+				return nil, errors.New("could not produce pack for " + set.Code)
+			}
+			pool.AddPackContent(pack)
+		}
+		pools = append(pools, pool)
 	}
 	return
 }
@@ -84,6 +112,7 @@ func (s *service) getSet(setCode string) (*db.Set, error) {
 	return set, err
 }
 
+// TODO: Could be done by set directly
 func (s *service) makeRegularPack(set *db.Set) (Pack, error) {
 	rand.Seed(time.Now().UTC().UnixNano())
 
@@ -106,6 +135,7 @@ func (s *service) makeRegularPack(set *db.Set) (Pack, error) {
 	return getCards(set, protoCards)
 }
 
+// TODO: Could be done by set directly
 func (s *service) makeDefaultPack(set *db.Set) (cards Pack, err error) {
 	rares, err := s.cardRepo.GetCardsWithRarity(set.Code, "Rare", 1)
 	if err != nil {
@@ -138,7 +168,7 @@ func getCards(s *db.Set, protoCards []db.ProtoCard) (cardPool Pack, err error) {
 	return
 }
 
-func (s *service) makeTotalChaosPack(sets []*db.Set) interface{} {
+func (s *service) makeTotalChaosPack(sets []*db.Set) RandomPackResult {
 	pack := Pack{}
 
 	//TODO: get Mythic or Rare
@@ -188,7 +218,7 @@ func (s *service) makeRandomPack(sets []*db.Set) (ret RandomPackResult) {
 	return RandomPackResult{Pool: pack}
 }
 
-func (s *service) MakeCubePacks(list []string, packSize, packsNum int) (packs []Pack, err error) {
+func (s *service) cubePacks(list []string, packSize, packsNum int) (packs []Pack, err error) {
 	cubeCards, missingCards := s.checkList(list[:])
 	if len(missingCards) > 0 {
 		return nil, fmt.Errorf("unknown cards: %s", missingCards)
@@ -205,7 +235,7 @@ func (s *service) MakeCubePacks(list []string, packSize, packsNum int) (packs []
 	return
 }
 
-func (s *service) MakeChaosPacks(modernOnly, totalChaos bool, packsNumber int) (packs []Pack, err error) {
+func (s *service) chaosDraft(modernOnly, totalChaos bool, packsNumber int) (packs []Pack, err error) {
 	sets, err := s.setRepo.GetChaosSets(modernOnly)
 	if err != nil {
 		return
@@ -228,6 +258,29 @@ func (s *service) MakeChaosPacks(modernOnly, totalChaos bool, packsNumber int) (
 			continue
 		}
 		packs = append(packs, result.Pool)
+	}
+
+	return
+}
+
+func (s *service) chaosSealed(modernOnly, totalChaos bool, packsNumber, playersNumber int) (packs []Pack, err error) {
+	sets, err := s.setRepo.GetChaosSets(modernOnly)
+	if err != nil {
+		return
+	}
+
+	for i := 0; i < playersNumber; i++ {
+		pool := Pack{}
+		for j := 0; j < packsNumber; j++ {
+			var result RandomPackResult
+			if !totalChaos {
+				result = s.makeRandomPack(sets)
+			} else {
+				result = s.makeTotalChaosPack(sets)
+			}
+			pool.AddPackContent(result.Pool)
+		}
+		packs = append(packs, pool)
 	}
 
 	return
@@ -320,4 +373,10 @@ func (c *Pack) AddCards(cards []*db.Card) *Pack {
 		c.Add(card, false)
 	}
 	return c
+}
+
+func (c *Pack) AddPackContent(pack Pack) {
+	for _, card := range pack {
+		*c = append(*c, card)
+	}
 }

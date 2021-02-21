@@ -150,7 +150,7 @@ type Sheet struct {
 	BalanceColors bool
 	Foil          bool
 	TotalWeight   uint
-	Cards         []SheetCard
+	SheetCards    []SheetCard
 }
 
 func (s *Sheet) GetRandomCards(cardsNumber int) (ret []ProtoCard) {
@@ -158,7 +158,7 @@ func (s *Sheet) GetRandomCards(cardsNumber int) (ret []ProtoCard) {
 
 		choices := make([]utils.Choice, 0)
 	OUTER:
-		for _, conf := range s.Cards {
+		for _, conf := range s.SheetCards {
 			for _, c := range ret {
 				if c.UUID == conf.UUID {
 					continue OUTER

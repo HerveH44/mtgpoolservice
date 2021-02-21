@@ -49,7 +49,7 @@ func MakeSheets(code string, sheets map[string]Sheet) (ret []db.Sheet) {
 			BalanceColors: sheet.BalanceColors,
 			Foil:          sheet.Foil,
 			TotalWeight:   sheet.TotalWeight,
-			Cards:         MakeSheetCards(code+"_"+name, sheet.Cards),
+			SheetCards:    MakeSheetCards(code+"_"+name, sheet.Cards),
 		}
 		ret = append(ret, sh)
 	}

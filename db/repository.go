@@ -65,8 +65,10 @@ func (s *setRepo) GetRandomSet() (*Set, error) {
 	var set = new(Set)
 
 	err := s.db.
+		Preload("Cards").
+		Preload("Sheets").
+		Preload("Sheets.SheetCards").
 		Order("random()").
-		Set("gorm:auto_preload", true).
 		First(set).
 		Error
 	return set, err
@@ -80,7 +82,9 @@ func (s *setRepo) FindSet(setCode string) (*Set, error) {
 
 	err := s.db.
 		Where(" code = ?", setCode).
-		Set("gorm:auto_preload", true).
+		Preload("Cards").
+		Preload("Sheets").
+		Preload("Sheets.SheetCards").
 		First(set).
 		Error
 	if err == nil {
